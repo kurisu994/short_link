@@ -26,7 +26,7 @@ async fn main() {
         .route("/number", get(base62_to_usize))
         .route("/users", post(create_user));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8008));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8008));
     tracing::debug!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
