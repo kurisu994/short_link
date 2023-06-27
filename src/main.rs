@@ -1,15 +1,15 @@
 use std::net::SocketAddr;
 
 use axum::{
-    http::StatusCode,
-    Json,
-    Router, routing::{get, post},
+    routing::{get, post},
+    Router,
 };
-use axum::extract::Query;
-use serde::{Deserialize, Serialize};
 
-use crate::utils::helper;
-
+use crate::demo::{base62_to_usize, create_user, redirect, root, usize_to_base62};
+pub use pojo::Message;
+mod demo;
+mod handle;
+mod pojo;
 mod utils;
 
 #[tokio::main]
@@ -17,7 +17,11 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let app = Router::new()
+        // .merge(router_fallible_service()) // 模拟使用 Service的错误处理
+        // .merge(router_fallible_middleware()) // 模拟使用中间件的错误处理
+        // .merge(router_fallible_extractor())  // 模拟使用提取器的错误处理
         .route("/", get(root))
+        .route("/302", get(redirect))
         .route("/base62", get(usize_to_base62))
         .route("/number", get(base62_to_usize))
         .route("/users", post(create_user));
@@ -28,48 +32,4 @@ async fn main() {
         .serve(app.into_make_service())
         .await
         .unwrap();
-}
-
-async fn root() -> &'static str {
-    "Hello, World!"
-}
-
-async fn usize_to_base62(Query(query): Query<Param>) -> String {
-    println!("{:?}", query);
-    helper::encode_base62(query.no.unwrap_or(0))
-}
-
-async fn base62_to_usize(Query(query): Query<Param>) -> String {
-    println!("{:?}", query);
-    let link = query.link.unwrap_or("0".to_string());
-    let res = helper::decode_base62(&link);
-    format!("{}", res)
-}
-
-async fn create_user(
-    Json(payload): Json<CreateUser>,
-) -> (StatusCode, Json<User>) {
-    let user = User {
-        id: 1337,
-        username: payload.username,
-    };
-
-    (StatusCode::CREATED, Json(user))
-}
-
-#[derive(Deserialize)]
-struct CreateUser {
-    username: String,
-}
-
-#[derive(Serialize)]
-struct User {
-    id: u64,
-    username: String,
-}
-
-#[derive(Deserialize, Debug)]
-struct Param {
-    no: Option<usize>,
-    link: Option<String>,
 }

@@ -2,14 +2,20 @@
 name = "short_link"
 version = "0.1.0"
 edition = "2021"
+authors = ["Kurisu <lucifer994@@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/kurisu994/short_link"
+homepage = "https://github.com/kurisu994/short_link"
+description = "使用AXUM构建的短链接服务"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 anyhow = "1.0.71"
 axum = { version = "0.6", features = ["headers", "macros"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.28.2", features = ["full"] }
+tower = "0.4.13"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
