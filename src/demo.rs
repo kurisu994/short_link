@@ -1,18 +1,21 @@
-use crate::utils::helper;
-use crate::Message;
 use axum::extract::Query;
 use axum::headers::HeaderMap;
 use axum::http::StatusCode;
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
+use crate::{MessageResult, RedirectResponse};
+use crate::Message;
+use crate::utils::helper;
+
 pub async fn root() -> &'static str {
     "Hello, World!"
 }
 
-pub async fn usize_to_base62(Query(query): Query<Param>) -> String {
+pub async fn usize_to_base62(Query(query): Query<Param>) -> MessageResult<String> {
     println!("{:?}", query);
-    helper::encode_base62(query.no.unwrap_or(0))
+    let b62 = helper::encode_base62(query.no.unwrap_or(0));
+    Ok(Message::ok(b62))
 }
 
 pub async fn base62_to_usize(Query(query): Query<Param>) -> String {
@@ -31,7 +34,7 @@ pub async fn create_user(Json(payload): Json<CreateUser>) -> (StatusCode, Json<M
     (StatusCode::OK, Json(Message::ok(user)))
 }
 
-pub async fn redirect() -> (StatusCode, HeaderMap, ()) {
+pub async fn redirect() -> RedirectResponse {
     let mut headers = HeaderMap::new();
     headers.insert(
         axum::http::header::LOCATION,

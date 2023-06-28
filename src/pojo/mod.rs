@@ -1,3 +1,6 @@
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use axum::Json;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -22,12 +25,42 @@ impl<T: Serialize> Message<T> {
         }
     }
     #[allow(dead_code)]
-    pub fn err(message: &str) -> Self {
+    pub fn failed(message: &str) -> Self {
         Message {
             code: -1,
             result: message.to_owned(),
             data: None,
             success: false,
         }
+    }
+}
+
+impl<T> IntoResponse for Message<T>
+where
+    T: Serialize,
+{
+    fn into_response(self) -> Response {
+        (StatusCode::OK, Json(self)).into_response()
+    }
+}
+
+pub struct AppError(anyhow::Error);
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("error: {}", self.0),
+        )
+            .into_response()
+    }
+}
+
+impl<E> From<E> for AppError
+where
+    E: Into<anyhow::Error>,
+{
+    fn from(err: E) -> Self {
+        Self(err.into())
     }
 }
