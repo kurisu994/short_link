@@ -49,15 +49,21 @@ pub fn encode_base62(data: usize) -> String {
 /// assert_eq!(result, 1024);
 /// ```
 #[allow(dead_code)]
-pub fn decode_base62(data: &str) -> usize {
+pub fn decode_base62(data: &str) -> Result<usize, anyhow::Error> {
     let mut result = 0;
     for (i, c) in data.chars().rev().enumerate() {
-        if let Some(index) = BASE62_ALPHABET.iter().position(|&x| x == c as u8) {
-            let value = index as usize;
-            let power = usize::pow(SCALE, i as u32);
-            result += value * power;
+        let pos = BASE62_ALPHABET.iter().position(|&x| x == c as u8);
+        match pos {
+            None => {
+                anyhow::bail!("invalid base62 string: [{}]", c)
+            }
+            Some(index) => {
+                let value = index as usize;
+                let power = usize::pow(SCALE, i as u32);
+                result += value * power;
+            }
         }
     }
 
-    result
+    Ok(result)
 }

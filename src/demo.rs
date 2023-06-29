@@ -21,15 +21,15 @@ pub async fn gen_union_id() -> MessageResult<i64> {
 }
 
 pub async fn usize_to_base62(Query(query): Query<Param>) -> MessageResult<String> {
-    println!("{:?}", query);
+    println!("no is: {:?}", query.no);
     let b62 = helper::encode_base62(query.no.unwrap_or(0));
     Ok(Message::ok(b62))
 }
 
 pub async fn base62_to_usize(Query(query): Query<Param>) -> HandlerResult<Message<String>> {
-    println!("{:?}", query);
+    println!("link is: {:?}", query.link);
     let link = query.link.unwrap_or("0".to_string());
-    let res = helper::decode_base62(&link);
+    let res = helper::decode_base62(&link)?;
     Ok(Message::ok(format!("{}", res)))
 }
 
