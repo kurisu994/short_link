@@ -4,7 +4,8 @@ use axum::http::StatusCode;
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
-use crate::{MessageResult, RedirectResponse};
+use crate::{MessageResult, RedirectResponse, RedirectResult};
+use crate::HandlerResult;
 use crate::Message;
 use crate::utils::helper;
 
@@ -18,11 +19,11 @@ pub async fn usize_to_base62(Query(query): Query<Param>) -> MessageResult<String
     Ok(Message::ok(b62))
 }
 
-pub async fn base62_to_usize(Query(query): Query<Param>) -> String {
+pub async fn base62_to_usize(Query(query): Query<Param>) -> HandlerResult<String> {
     println!("{:?}", query);
     let link = query.link.unwrap_or("0".to_string());
     let res = helper::decode_base62(&link);
-    format!("{}", res)
+    Ok(format!("{}", res))
 }
 
 pub async fn create_user(Json(payload): Json<CreateUser>) -> (StatusCode, Json<Message<User>>) {
@@ -34,13 +35,14 @@ pub async fn create_user(Json(payload): Json<CreateUser>) -> (StatusCode, Json<M
     (StatusCode::OK, Json(Message::ok(user)))
 }
 
-pub async fn redirect() -> RedirectResponse {
+pub async fn redirect() -> RedirectResult {
     let mut headers = HeaderMap::new();
     headers.insert(
         axum::http::header::LOCATION,
         "https://testh5.feewee.cn".parse().unwrap(),
     );
-    (StatusCode::FOUND, headers, ())
+    let redirect: RedirectResponse = (StatusCode::FOUND, headers, ());
+    Ok(redirect)
 }
 
 #[derive(Deserialize)]
