@@ -13,6 +13,7 @@ description = "使用AXUM构建的短链接服务"
 [dependencies]
 anyhow = "1.0.71"
 axum = { version = "0.6", features = ["headers", "macros"] }
+chrono = "0.4.26"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.28.2", features = ["full"] }

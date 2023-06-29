@@ -8,30 +8,38 @@ use axum::http::{Method, StatusCode};
 use axum::response::IntoResponse;
 use tower_http::cors::{Any, CorsLayer};
 
+use idgen::{IdGeneratorOptions, YitIdHelper};
+
 use crate::{
     demo::{base62_to_usize, create_user, redirect, root, usize_to_base62},
     pojo::AppError,
     pojo::Message,
     types::{HandlerResult, MessageResult, RedirectResponse, RedirectResult},
 };
+use crate::demo::gen_union_id;
 
 mod demo;
 mod handle;
+mod idgen;
 mod pojo;
-mod utils;
 mod types;
+mod utils;
 
 #[tokio::main]
 async fn main() {
+    let options = IdGeneratorOptions::default();
+    YitIdHelper::set_id_generator(options);
+
     tracing_subscriber::fmt::init();
 
     let app = Router::new()
         // .merge(router_fallible_middleware()) // 模拟使用中间件的错误处理
         // .merge(router_fallible_extractor())  // 模拟使用提取器的错误处理
         .route("/", get(root))
+        .route("/id", get(gen_union_id))
         .route("/302", get(redirect))
-        .route("/base62", get(usize_to_base62))
-        .route("/number", get(base62_to_usize))
+        .route("/to_link", get(usize_to_base62))
+        .route("/to_no", get(base62_to_usize))
         .route("/users", post(create_user))
         .layer(CorsLayer::new().allow_origin(Any).allow_methods([
             Method::GET,

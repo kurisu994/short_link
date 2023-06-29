@@ -1,7 +1,5 @@
-use axum::{
-    http::{HeaderMap, StatusCode},
-};
 use crate::Message;
+use axum::http::{HeaderMap, StatusCode};
 
 #[allow(dead_code)]
 pub type HandlerResult<T> = Result<T, crate::AppError>;

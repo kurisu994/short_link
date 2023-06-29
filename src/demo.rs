@@ -4,13 +4,20 @@ use axum::http::StatusCode;
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
-use crate::{MessageResult, RedirectResponse, RedirectResult};
+use crate::idgen::YitIdHelper;
+use crate::utils::helper;
 use crate::HandlerResult;
 use crate::Message;
-use crate::utils::helper;
+use crate::{MessageResult, RedirectResponse, RedirectResult};
 
 pub async fn root() -> &'static str {
     "Hello, World!"
+}
+
+pub async fn gen_union_id() -> MessageResult<i64> {
+    let next_id = YitIdHelper::next_id();
+    println!("next_id: {}", next_id);
+    Ok(Message::ok(next_id))
 }
 
 pub async fn usize_to_base62(Query(query): Query<Param>) -> MessageResult<String> {
@@ -19,11 +26,11 @@ pub async fn usize_to_base62(Query(query): Query<Param>) -> MessageResult<String
     Ok(Message::ok(b62))
 }
 
-pub async fn base62_to_usize(Query(query): Query<Param>) -> HandlerResult<String> {
+pub async fn base62_to_usize(Query(query): Query<Param>) -> HandlerResult<Message<String>> {
     println!("{:?}", query);
     let link = query.link.unwrap_or("0".to_string());
     let res = helper::decode_base62(&link);
-    Ok(format!("{}", res))
+    Ok(Message::ok(format!("{}", res)))
 }
 
 pub async fn create_user(Json(payload): Json<CreateUser>) -> (StatusCode, Json<Message<User>>) {
