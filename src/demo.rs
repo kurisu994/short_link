@@ -4,11 +4,12 @@ use axum::http::StatusCode;
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
-use crate::idgen::YitIdHelper;
-use crate::utils::helper;
-use crate::HandlerResult;
-use crate::Message;
 use crate::{MessageResult, RedirectResponse, RedirectResult};
+use crate::HandlerResult;
+use crate::idgen::YitIdHelper;
+use crate::Message;
+use crate::pojo::AppError;
+use crate::utils::helper;
 
 pub async fn root() -> &'static str {
     "Hello, World!"
@@ -28,7 +29,10 @@ pub async fn usize_to_base62(Query(query): Query<Param>) -> MessageResult<String
 
 pub async fn base62_to_usize(Query(query): Query<Param>) -> HandlerResult<Message<String>> {
     println!("link is: {:?}", query.link);
-    let link = query.link.unwrap_or("0".to_string());
+    if query.link == None {
+        return Err(AppError::from(anyhow::anyhow!("link is not found")));
+    }
+    let link = query.link.unwrap();
     let res = helper::decode_base62(&link)?;
     Ok(Message::ok(format!("{}", res)))
 }
