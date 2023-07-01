@@ -1,22 +1,22 @@
 use std::net::SocketAddr;
 
-use axum::{
-    Router,
-    routing::{get, post},
-};
 use axum::http::{Method, StatusCode};
 use axum::response::IntoResponse;
+use axum::{
+    routing::{get, post},
+    Router,
+};
 use tower_http::cors::{Any, CorsLayer};
 
 use idgen::{IdGeneratorOptions, YitIdHelper};
 
+use crate::demo::gen_union_id;
 use crate::{
     demo::{base62_to_usize, create_user, redirect, root, usize_to_base62},
     pojo::AppError,
     pojo::Message,
     types::{HandlerResult, MessageResult, RedirectResponse, RedirectResult},
 };
-use crate::demo::gen_union_id;
 
 mod demo;
 mod handle;

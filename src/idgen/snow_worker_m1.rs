@@ -58,7 +58,6 @@ impl SnowWorkerM1 {
         if options.seq_bit_length + options.worker_id_bit_length > 22 {
             panic!("error：WorkerIdBitLength + SeqBitLength <= 22");
         } else {
-            // self.WorkerIdBitLength = options.WorkerIdBitLength;
             self.worker_id_bit_length = if options.worker_id_bit_length <= 0 {
                 6
             } else {
@@ -81,7 +80,6 @@ impl SnowWorkerM1 {
         if options.seq_bit_length < 2 || options.seq_bit_length > 21 {
             panic!("SeqBitLength error. (range:[2, 21])");
         } else {
-            // self.SeqBitLength = options.SeqBitLength;
             self.seq_bit_length = if options.seq_bit_length <= 0 {
                 6
             } else {
@@ -155,7 +153,6 @@ impl SnowWorkerM1 {
     }
 
     pub fn next_id(&mut self) -> i64 {
-        // println!("SeqBitLength: {}", self.SeqBitLength);
         if self._is_over_cost {
             self.next_over_cost_id()
         } else {
@@ -230,8 +227,6 @@ impl SnowWorkerM1 {
                 }
                 self.begin_turn_back_action();
             }
-
-            // thread::sleep(std::time::Duration::from_millis(1));
             return self.calc_turn_back_id(self._turn_back_time_tick);
         }
 

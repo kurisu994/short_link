@@ -4,12 +4,12 @@ use axum::http::StatusCode;
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
-use crate::{MessageResult, RedirectResponse, RedirectResult};
-use crate::HandlerResult;
 use crate::idgen::YitIdHelper;
-use crate::Message;
 use crate::pojo::AppError;
 use crate::utils::helper;
+use crate::HandlerResult;
+use crate::Message;
+use crate::{MessageResult, RedirectResponse, RedirectResult};
 
 pub async fn root() -> &'static str {
     "Hello, World!"
