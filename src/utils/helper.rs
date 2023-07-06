@@ -1,3 +1,6 @@
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
+use sha2::{Digest, Sha256};
+
 const BASE62_ALPHABET: [u8; 62] =
     *b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 const SCALE: usize = 62;
@@ -66,4 +69,38 @@ pub fn decode_base62(data: &str) -> Result<usize, anyhow::Error> {
     }
 
     Ok(result)
+}
+
+/// string convert to sha-256 base64
+///
+/// # Arguments
+///
+/// * `input`: not empty string
+///
+/// returns: base64 string
+///
+/// # Examples
+///
+/// ```
+/// let result = helper::calculate_sha256("abcd");
+/// assert_eq!(result, "iNQmb9TmM40TuEX88olXnSCciXgjuSF9o-Fhk28DFYk");
+/// ```
+#[allow(dead_code)]
+pub fn calculate_sha256(input: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(input);
+    let result = hasher.finalize();
+
+    URL_SAFE_NO_PAD.encode(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sha_to_256() {
+        let result = calculate_sha256("abcd");
+        assert_eq!(result, "iNQmb9TmM40TuEX88olXnSCciXgjuSF9o-Fhk28DFYk");
+    }
 }
