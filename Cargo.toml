@@ -16,6 +16,7 @@ axum = { version = "0.6", features = ["headers", "macros"] }
 base64 = "0.21.2"
 chrono = "0.4.26"
 diesel =  { version = "^2.1.0", features = ["mysql"] }
+diesel-async = { version = "^0.3.1", features = ["mysql"] }
 diesel_migrations = { version = "^2.1.0", features = ["mysql"] }
 log = "0.4.19"
 log4rs = "1.2.0"

@@ -18,6 +18,7 @@ use crate::{
     pojo::Message,
     types::{HandlerResult, MessageResult, RedirectResponse, RedirectResult},
 };
+use schema::link_history;
 
 mod demo;
 mod handle;
@@ -25,6 +26,7 @@ mod idgen;
 mod pojo;
 mod types;
 mod utils;
+mod schema;
 
 #[tokio::main]
 async fn main() {
