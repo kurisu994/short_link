@@ -189,6 +189,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "604178f6c5c21f02dc555784810edfb88d34ac2c73b2eae109655649ee73ce3d"
 
 [[package]]
+name = "bb8"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98b4b0f25f18bcdc3ac72bdb486ed0acf7e185221fd4dc985bc15db5800b0ba2"
+dependencies = [
+ "async-trait",
+ "futures-channel",
+ "futures-util",
+ "parking_lot",
+ "tokio",
+]
+
+[[package]]
 name = "bigdecimal"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -259,7 +272,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4114279215a005bc675e386011e594e1d9b800918cea18fcadadcce864a2046b"
 dependencies = [
  "borsh-derive",
- "hashbrown 0.12.3",
+ "hashbrown 0.13.2",
 ]
 
 [[package]]
@@ -368,6 +381,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "time 0.1.45",
  "wasm-bindgen",
  "winapi",
@@ -574,6 +588,7 @@ checksum = "f7a532c1f99a0f596f6960a60d1e119e91582b24b39e2d83a190e61262c3ef0c"
 dependencies = [
  "bitflags 2.3.3",
  "byteorder",
+ "chrono",
  "diesel_derives",
  "mysqlclient-sys",
  "percent-encoding",
@@ -587,6 +602,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a40df24b390b2437af8b934b39acd277c246a08004afb91b8ccbe3137ffd4edc"
 dependencies = [
  "async-trait",
+ "bb8",
  "diesel",
  "futures-channel",
  "futures-util",
@@ -817,6 +833,7 @@ version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26b01e40b772d54cf6c6d721c1d1abd0647a0106a12ecaa1c186273392a69533"
 dependencies = [
+ "futures-channel",
  "futures-core",
  "futures-macro",
  "futures-sink",
@@ -2181,12 +2198,14 @@ dependencies = [
  "anyhow",
  "axum",
  "base64 0.21.2",
+ "bb8",
  "chrono",
  "diesel",
  "diesel-async",
  "diesel_migrations",
  "log",
  "log4rs",
+ "mysqlclient-sys",
  "redis",
  "serde",
  "serde_json",

@@ -5,7 +5,7 @@ create table if not exists link_history
     origin_url  varchar(4000)                      not null comment '原始的地址',
     link_type   int                                null comment '链接类型 1:短期 2:长期',
     expire_date datetime                           null,
-    active      int                                not null comment '是否有效的',
+    active      tinyint                            not null comment '是否有效的',
     link_hash   varchar(48)                        not null comment '链接的hash值',
     create_date datetime default CURRENT_TIMESTAMP null,
     update_date datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,

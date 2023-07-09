@@ -7,7 +7,7 @@ diesel::table! {
         origin_url -> Varchar,
         link_type -> Nullable<Integer>,
         expire_date -> Nullable<Datetime>,
-        active -> Integer,
+        active -> Bool,
         #[max_length = 48]
         link_hash -> Varchar,
         create_date -> Nullable<Datetime>,

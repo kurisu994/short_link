@@ -18,22 +18,39 @@ use crate::{
     pojo::Message,
     types::{HandlerResult, MessageResult, RedirectResponse, RedirectResult},
 };
+use diesel_async::{
+    pooled_connection::AsyncDieselConnectionManager, AsyncMysqlConnection, RunQueryDsl,
+};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 use schema::link_history;
 
 mod demo;
 mod handle;
 mod idgen;
 mod pojo;
+mod schema;
 mod types;
 mod utils;
-mod schema;
+
+type DbPool = bb8::Pool<AsyncDieselConnectionManager<AsyncMysqlConnection>>;
+
 
 #[tokio::main]
 async fn main() {
     let options = IdGeneratorOptions::default();
     YitIdHelper::set_id_generator(options);
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "short_link=debug".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 
-    tracing_subscriber::fmt::init();
+    let db_url = std::env::var("DATABASE_URL").unwrap();
+    let config = AsyncDieselConnectionManager::<AsyncMysqlConnection>::new(db_url);
+    let pool = bb8::Pool::builder().build(config).await.unwrap();
 
     let app = Router::new()
         // .merge(router_fallible_middleware()) // 模拟使用中间件的错误处理
@@ -50,7 +67,9 @@ async fn main() {
             Method::PUT,
             Method::DELETE,
         ]))
-        .fallback(handler_404);
+        .fallback(handler_404)
+        .with_state(pool)
+        ;
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8008));
     tracing::debug!("listening on {}", addr);
@@ -73,7 +92,7 @@ async fn shutdown_signal() {
     };
 
     #[cfg(unix)]
-    let terminate = async {
+        let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
@@ -81,7 +100,7 @@ async fn shutdown_signal() {
     };
 
     #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
+        let terminate = std::future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => {},
