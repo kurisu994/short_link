@@ -1,45 +1,36 @@
 use std::net::SocketAddr;
+use std::time::Duration;
 
 use axum::http::{Method, StatusCode};
 use axum::response::IntoResponse;
-use axum::{
-    routing::{get, post},
-    Router,
-};
+use axum::Router;
+use sqlx::{MySql, Pool};
+use sqlx::mysql::MySqlPoolOptions;
 use tokio::signal;
 use tower_http::cors::{Any, CorsLayer};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 use idgen::{IdGeneratorOptions, YitIdHelper};
 
-use crate::demo::gen_union_id;
 use crate::{
-    demo::{base62_to_usize, create_user, redirect, root, usize_to_base62},
     pojo::AppError,
     pojo::Message,
     types::{HandlerResult, MessageResult, RedirectResponse, RedirectResult},
 };
-use diesel_async::{
-    pooled_connection::AsyncDieselConnectionManager, AsyncMysqlConnection, RunQueryDsl,
-};
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use schema::link_history;
 
 mod demo;
 mod handle;
 mod idgen;
 mod pojo;
-mod schema;
 mod types;
 mod utils;
-
-type DbPool = bb8::Pool<AsyncDieselConnectionManager<AsyncMysqlConnection>>;
-
 
 #[tokio::main]
 async fn main() {
     let options = IdGeneratorOptions::default();
     YitIdHelper::set_id_generator(options);
+    dotenv::dotenv().ok();
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -47,20 +38,21 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
+    if let Err(err) = run_server().await {
+        eprintln!("Server error: {}", err);
+    }
+}
 
+async fn run_server() -> Result<(), axum::Error> {
     let db_url = std::env::var("DATABASE_URL").unwrap();
-    let config = AsyncDieselConnectionManager::<AsyncMysqlConnection>::new(db_url);
-    let pool = bb8::Pool::builder().build(config).await.unwrap();
+    let pool = MySqlPoolOptions::new()
+        .max_connections(15)
+        .acquire_timeout(Duration::from_secs(15))
+        .connect(&db_url)
+        .await
+        .unwrap();
 
-    let app = Router::new()
-        // .merge(router_fallible_middleware()) // 模拟使用中间件的错误处理
-        // .merge(router_fallible_extractor())  // 模拟使用提取器的错误处理
-        .route("/", get(root))
-        .route("/id", get(gen_union_id))
-        .route("/302", get(redirect))
-        .route("/to_link", get(usize_to_base62))
-        .route("/to_no", get(base62_to_usize))
-        .route("/users", post(create_user))
+    let app = api_router()
         .layer(CorsLayer::new().allow_origin(Any).allow_methods([
             Method::GET,
             Method::POST,
@@ -68,8 +60,7 @@ async fn main() {
             Method::DELETE,
         ]))
         .fallback(handler_404)
-        .with_state(pool)
-        ;
+        .with_state(pool);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8008));
     tracing::debug!("listening on {}", addr);
@@ -78,6 +69,12 @@ async fn main() {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
+    Ok(())
+}
+
+fn api_router() -> Router<Pool<MySql>> {
+    // This is the order that the modules were authored in.
+    Router::new().merge(demo::router())
 }
 
 async fn handler_404() -> impl IntoResponse {
@@ -92,7 +89,7 @@ async fn shutdown_signal() {
     };
 
     #[cfg(unix)]
-        let terminate = async {
+    let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
@@ -100,7 +97,7 @@ async fn shutdown_signal() {
     };
 
     #[cfg(not(unix))]
-        let terminate = std::future::pending::<()>();
+    let terminate = std::future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => {},

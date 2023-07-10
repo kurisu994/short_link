@@ -16,16 +16,14 @@ axum = { version = "0.6", features = ["headers", "macros"] }
 base64 = "0.21.2"
 bb8 = "0.8.1"
 chrono = { version = "0.4.26", features = ["serde"] }
-diesel = { version = "^2.1.0", features = ["mysql", 'chrono'] }
-diesel-async = { version = "^0.3.1", features = ["mysql", "bb8"] }
-diesel_migrations = { version = "^2.1.0", features = ["mysql"] }
+dotenv = "0.15.0"
 log = "0.4.19"
 log4rs = "1.2.0"
-mysqlclient-sys = { version = "0.2.5" }
 redis = "0.23.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10.7"
+sqlx = { version = "0.7", features = [ "runtime-tokio-rustls", "chrono", "mysql", "macros" ] }
 tokio = { version = "1.28.2", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4", features = ["cors"] }

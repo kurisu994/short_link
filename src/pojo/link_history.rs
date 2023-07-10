@@ -1,8 +1,6 @@
-use diesel::prelude::*;
-use crate::link_history;
+use serde::{Deserialize, Serialize};
 
-#[derive(serde::Deserialize, Insertable)]
-#[diesel(table_name = link_history)]
+#[derive(Deserialize, Debug, Serialize)]
 struct LinkHistory<'a> {
     id: i64,
     origin_url: &'a str,

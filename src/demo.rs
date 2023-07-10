@@ -1,8 +1,10 @@
-use axum::extract::Query;
+use axum::extract::{Query, State};
 use axum::headers::HeaderMap;
 use axum::http::StatusCode;
-use axum::Json;
+use axum::routing::{get, post};
+use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
+use sqlx::{MySql, MySqlPool, Pool};
 
 use crate::idgen::YitIdHelper;
 use crate::pojo::AppError;
@@ -11,8 +13,28 @@ use crate::HandlerResult;
 use crate::Message;
 use crate::{MessageResult, RedirectResponse, RedirectResult};
 
+pub fn router() -> Router<Pool<MySql>> {
+    Router::new()
+        .route("/", get(root))
+        .route("/id", get(gen_union_id))
+        .route("/302", get(redirect))
+        .route("/to_link", get(usize_to_base62))
+        .route("/to_no", get(base62_to_usize))
+        .route("/users", post(create_user))
+        .route("/sqlx", get(using_connection_pool_extractor))
+}
+
 pub async fn root() -> &'static str {
     "Hello, World!"
+}
+
+async fn using_connection_pool_extractor(
+    State(pool): State<MySqlPool>,
+) -> Result<String, (StatusCode, String)> {
+    sqlx::query_scalar("select 'hello world' from link_history")
+        .fetch_one(&pool)
+        .await
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
 }
 
 pub async fn gen_union_id() -> MessageResult<i64> {
