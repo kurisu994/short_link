@@ -1,10 +1,11 @@
 use std::net::SocketAddr;
+use std::sync::Arc;
 use std::time::Duration;
 
 use axum::http::{Method, StatusCode};
 use axum::response::IntoResponse;
 use axum::Router;
-use sqlx::{MySql, Pool};
+use sqlx::{MySql,  Pool};
 use sqlx::mysql::MySqlPoolOptions;
 use tokio::signal;
 use tower_http::cors::{Any, CorsLayer};
@@ -26,6 +27,12 @@ mod pojo;
 mod types;
 mod utils;
 
+#[derive(Clone)]
+pub struct IState {
+    db_pool: Pool<MySql>,
+    redis_pool: bb8::Pool<bb8_redis::RedisConnectionManager>,
+}
+
 #[tokio::main]
 async fn main() {
     let options = IdGeneratorOptions::default();
@@ -45,12 +52,28 @@ async fn main() {
 
 async fn run_server() -> Result<(), axum::Error> {
     let db_url = std::env::var("DATABASE_URL").unwrap();
-    let pool = MySqlPoolOptions::new()
+    let db_pool = MySqlPoolOptions::new()
         .max_connections(15)
         .acquire_timeout(Duration::from_secs(15))
         .connect(&db_url)
         .await
         .unwrap();
+
+    let redis_url = std::env::var("REDIS_URL").unwrap();
+    tracing::debug!("redis_url is {}", redis_url);
+
+    let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url).unwrap();
+    let redis_pool = bb8::Pool::builder()
+        .max_size(20)
+        .build(redis_manager)
+        .await
+        .unwrap();
+
+    // 创建状态对象
+    let state = Arc::new(IState {
+        db_pool,
+        redis_pool,
+    });
 
     let app = api_router()
         .layer(CorsLayer::new().allow_origin(Any).allow_methods([
@@ -60,7 +83,8 @@ async fn run_server() -> Result<(), axum::Error> {
             Method::DELETE,
         ]))
         .fallback(handler_404)
-        .with_state(pool);
+        .with_state(state)
+        ;
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8008));
     tracing::debug!("listening on {}", addr);
@@ -72,7 +96,7 @@ async fn run_server() -> Result<(), axum::Error> {
     Ok(())
 }
 
-fn api_router() -> Router<Pool<MySql>> {
+fn api_router() -> Router<Arc<IState>> {
     // This is the order that the modules were authored in.
     Router::new().merge(demo::router())
 }

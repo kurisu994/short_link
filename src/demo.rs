@@ -1,19 +1,19 @@
-use axum::extract::{Query, State};
+use axum::extract::{Query,State};
 use axum::headers::HeaderMap;
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
-use sqlx::{MySql, MySqlPool, Pool};
+use std::sync::Arc;
 
 use crate::idgen::YitIdHelper;
 use crate::pojo::AppError;
 use crate::utils::helper;
-use crate::HandlerResult;
+use crate::{HandlerResult, IState};
 use crate::Message;
 use crate::{MessageResult, RedirectResponse, RedirectResult};
 
-pub fn router() -> Router<Pool<MySql>> {
+pub fn router() -> Router<Arc<IState>> {
     Router::new()
         .route("/", get(root))
         .route("/id", get(gen_union_id))
@@ -22,6 +22,7 @@ pub fn router() -> Router<Pool<MySql>> {
         .route("/to_no", get(base62_to_usize))
         .route("/users", post(create_user))
         .route("/sqlx", get(using_connection_pool_extractor))
+        .route("/redis", get(using_connection_pool_redis))
 }
 
 pub async fn root() -> &'static str {
@@ -29,12 +30,21 @@ pub async fn root() -> &'static str {
 }
 
 async fn using_connection_pool_extractor(
-    State(pool): State<MySqlPool>,
+    State(pool): State<Arc<IState>>,
 ) -> Result<String, (StatusCode, String)> {
     sqlx::query_scalar("select 'hello world' from link_history")
-        .fetch_one(&pool)
+        .fetch_one(&pool.db_pool)
         .await
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
+}
+
+async fn using_connection_pool_redis(
+    State(pool): State<Arc<IState>>,
+) -> Result<String, (StatusCode, String)> {
+    let mut redis_conn = pool.redis_pool.get().await.unwrap();
+    let reply: String = redis::cmd("PING").query_async(&mut *redis_conn).await.unwrap();
+
+    Ok(reply)
 }
 
 pub async fn gen_union_id() -> MessageResult<i64> {

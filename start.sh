@@ -8,7 +8,8 @@ docker rm short-link
 
 docker run -d  \
   --name short-link \
-  --link mysql  \
+  --link mysql \
+  --link redis \
   -u root \
   -e DATABASE_URL=mysql://root:123456@mysql:3306/short_link \
   -p 9222:8008 \
