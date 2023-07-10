@@ -8,4 +8,6 @@ struct LinkHistory<'a> {
     expire_date: Option<chrono::NaiveDateTime>,
     active: bool,
     link_hash: &'a str,
+    create_time: Option<chrono::NaiveDateTime>,
+    update_time: Option<chrono::NaiveDateTime>,
 }

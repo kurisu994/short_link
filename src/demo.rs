@@ -1,4 +1,4 @@
-use axum::extract::{Query,State};
+use axum::extract::{Query, State};
 use axum::headers::HeaderMap;
 use axum::http::StatusCode;
 use axum::routing::{get, post};
@@ -9,8 +9,8 @@ use std::sync::Arc;
 use crate::idgen::YitIdHelper;
 use crate::pojo::AppError;
 use crate::utils::helper;
-use crate::{HandlerResult, IState};
 use crate::Message;
+use crate::{HandlerResult, IState};
 use crate::{MessageResult, RedirectResponse, RedirectResult};
 
 pub fn router() -> Router<Arc<IState>> {
@@ -42,7 +42,10 @@ async fn using_connection_pool_redis(
     State(pool): State<Arc<IState>>,
 ) -> Result<String, (StatusCode, String)> {
     let mut redis_conn = pool.redis_pool.get().await.unwrap();
-    let reply: String = redis::cmd("PING").query_async(&mut *redis_conn).await.unwrap();
+    let reply: String = redis::cmd("PING")
+        .query_async(&mut *redis_conn)
+        .await
+        .unwrap();
 
     Ok(reply)
 }

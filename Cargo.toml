@@ -12,6 +12,7 @@ description = "使用AXUM构建的短链接服务"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 anyhow = "1.0.71"
+async-trait = "0.1.71"
 axum = { version = "0.6", features = ["headers", "macros"] }
 base64 = "0.21.2"
 bb8 = "0.8.1"
@@ -24,9 +25,10 @@ redis = { version = "0.23.0", features = ["tokio"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10.7"
-sqlx = { version = "0.7", features = [ "runtime-tokio-rustls", "chrono", "mysql", "macros" ] }
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "chrono", "mysql", "macros"] }
 tokio = { version = "1.28.2", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4", features = ["cors"] }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+validator = { version = "0.16.1", features = ["derive"] }
