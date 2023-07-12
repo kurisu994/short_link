@@ -64,5 +64,8 @@ async fn run_server() -> Result<(), axum::Error> {
 }
 
 fn api_router() -> Router<Arc<IState>> {
-    Router::new().merge(demo::router())
+    Router::new()
+        .merge(demo::router())
+        .merge(handle::api::router())
+        .merge(handle::admin::router())
 }

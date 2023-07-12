@@ -1,9 +1,26 @@
-mod link_history;
-
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+
+pub mod link_history;
+
+#[derive(Deserialize, Debug)]
+pub struct Pagination {
+    pub page: usize,
+    pub per_page_last: usize,
+    pub page_size: usize,
+}
+
+impl Default for Pagination {
+    fn default() -> Self {
+        Self {
+            page: 1,
+            per_page_last: 0,
+            page_size: 10,
+        }
+    }
+}
 
 #[derive(Debug, Serialize)]
 pub struct Message<T>

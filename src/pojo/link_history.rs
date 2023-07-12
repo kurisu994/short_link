@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Serialize)]
-struct LinkHistory<'a> {
+pub struct LinkHistory<'a> {
     id: i64,
     origin_url: &'a str,
     link_type: Option<i32>,
