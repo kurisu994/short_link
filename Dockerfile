@@ -16,28 +16,19 @@ RUN rm ./target/release/deps/short_link*
 RUN cargo build --release
 
 
-FROM ubuntu:20.04
+FROM ubuntu:latest
 
-ARG APP=/usr/src/app
-
-ENV DATABASE_URL=default_value
+ARG APP=/usr/app
 
 EXPOSE 8008
 
-ENV TZ=Asia/Shanghai \
-    APP_USER=appuser
-
-RUN groupadd $APP_USER \
-    && useradd -g $APP_USER $APP_USER \
-    && mkdir -p ${APP}
-
+ENV TZ=Asia/Shanghai
 
 COPY --from=builder /short_link/target/release/short_link ${APP}/short_link
-COPY --from=builder /short_link/.env ${APP}/.env
 
-RUN chown -R $APP_USER:$APP_USER ${APP}
+RUN ln -sf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone
 
-USER $APP_USER
 WORKDIR ${APP}
 
 CMD ["./short_link"]

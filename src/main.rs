@@ -15,6 +15,7 @@ use crate::{
     types::{HandlerResult, IState, MessageResult, RedirectResponse, RedirectResult},
 };
 
+mod config;
 mod demo;
 mod handle;
 mod idgen;
@@ -27,7 +28,6 @@ mod utils;
 async fn main() {
     let options = IdGeneratorOptions::default();
     YitIdHelper::set_id_generator(options);
-    dotenv::dotenv().ok();
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -53,7 +53,7 @@ async fn run_server() -> Result<(), axum::Error> {
         .with_state(state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8008));
-    tracing::debug!("listening on {}", addr);
+    tracing::info!("server start success, listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(prepare::shutdown_signal())

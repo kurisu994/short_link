@@ -2,4 +2,5 @@
 /.idea
 /tmp/
 /logs/
-.config/
+.config
+.*.local

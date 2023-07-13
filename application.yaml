@@ -1,0 +1,20 @@
+# 目前仅支持mysql
+datasource:
+  host: localhost
+  port: 3306
+  user: root
+  password: 123456
+  # 连接池最大数量
+  max_pool_size: 30
+  # 最大空闲时间（秒）
+  idle_timeout: 120
+  db_name: short_link
+
+# 暂不支持集群和ssh
+redis:
+  host: localhost
+  port: 6379
+  user_name: redis
+  password: mygvo0oq
+  max_size: 10
+  database: 5
