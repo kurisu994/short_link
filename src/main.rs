@@ -12,7 +12,7 @@ use idgen::{IdGeneratorOptions, YitIdHelper};
 use crate::{
     pojo::AppError,
     pojo::Message,
-    service::link_service,
+    service::{link_base_service, link_service},
     types::{HandlerResult, IState, MessageResult, RedirectResponse, RedirectResult},
 };
 
@@ -22,9 +22,9 @@ mod handle;
 mod idgen;
 mod pojo;
 mod prepare;
+mod service;
 mod types;
 mod utils;
-mod service;
 
 #[tokio::main]
 async fn main() {

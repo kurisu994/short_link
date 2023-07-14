@@ -20,7 +20,7 @@ pub fn router() -> Router<Arc<IState>> {
 async fn link_list<'a>(
     State(_pool): State<Arc<IState>>,
     pagination: Option<Query<Pagination>>,
-) -> MessageResult<Vec<LinkHistory<'a>>> {
+) -> MessageResult<Vec<LinkHistory>> {
     let Query(pagination) = pagination.unwrap_or_default();
     tracing::info!("pagination is {:?}", pagination);
     Ok(Message::failed(""))
@@ -36,7 +36,7 @@ struct CreateLink {
 async fn create_link<'a>(
     State(pool): State<Arc<IState>>,
     Json(payload): Json<CreateLink>,
-) -> MessageResult<LinkHistory<'a>> {
+) -> MessageResult<LinkHistory> {
     let res = link_service::create_link(pool, payload.url, payload.duration).await?;
 
     Ok(Message::failed(&res))

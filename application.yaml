@@ -17,3 +17,4 @@ redis:
   password: mygvo0oq
   max_size: 10
   database: 2
+  
