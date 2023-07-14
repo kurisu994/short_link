@@ -11,7 +11,6 @@ pub async fn query_by_id(
             .bind(id)
             .fetch_optional(m_conn)
             .await?;
-    tracing::info!("{:#?}", history_res);
     Ok(history_res)
 }
 
@@ -25,7 +24,6 @@ pub async fn query_by_link_hash(
     .bind(link_hash)
     .fetch_optional(m_conn)
     .await?;
-    tracing::info!("{:#?}", history_res);
     Ok(history_res)
 }
 

@@ -98,8 +98,6 @@ fn load_config(path: &str) -> Option<Config> {
         }
     };
     let file_path = current_dir.join(path);
-    tracing::info!("path: {:?}", file_path);
-
     let cfg_str = match std::fs::read_to_string(file_path) {
         Ok(data) => data,
         Err(err) => {

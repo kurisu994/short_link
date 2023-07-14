@@ -58,7 +58,7 @@ pub fn decode_base62(data: &str) -> Result<usize, anyhow::Error> {
         let pos = BASE62_ALPHABET.iter().position(|&x| x == c as u8);
         match pos {
             None => {
-                anyhow::bail!("invalid short link: [{}]", c)
+                return Err(anyhow::anyhow!("invalid short link: [{}]", c));
             }
             Some(index) => {
                 let value = index as usize;

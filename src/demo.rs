@@ -1,17 +1,18 @@
+use std::sync::Arc;
+
 use axum::extract::{Query, State};
 use axum::headers::HeaderMap;
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 
 use crate::idgen::YitIdHelper;
 use crate::pojo::AppError;
 use crate::utils::helper;
 use crate::Message;
 use crate::{HandlerResult, IState};
-use crate::{MessageResult, RedirectResponse, RedirectResult};
+use crate::{MessageResult, RedirectResponse};
 
 pub fn router() -> Router<Arc<IState>> {
     Router::new()
@@ -81,14 +82,13 @@ pub async fn create_user(Json(payload): Json<CreateUser>) -> (StatusCode, Json<M
     (StatusCode::OK, Json(Message::ok(user)))
 }
 
-pub async fn redirect() -> RedirectResult {
+pub async fn redirect() -> RedirectResponse {
     let mut headers = HeaderMap::new();
     headers.insert(
         axum::http::header::LOCATION,
         "https://testh5.feewee.cn".parse().unwrap(),
     );
-    let redirect: RedirectResponse = (StatusCode::FOUND, headers, ());
-    Ok(redirect)
+    (StatusCode::FOUND, headers, ())
 }
 
 #[derive(Deserialize)]
