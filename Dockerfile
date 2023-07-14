@@ -16,7 +16,7 @@ RUN rm ./target/release/deps/short_link*
 RUN cargo build --release
 
 
-FROM ubuntu:latest
+FROM ubuntu:20.04
 
 ARG APP=/usr/app
 
