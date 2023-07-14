@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use axum::{http::StatusCode, response::IntoResponse};
 use bb8_redis::RedisConnectionManager;
-use sqlx::{MySql, Pool};
 use sqlx::mysql::MySqlPoolOptions;
+use sqlx::{MySql, Pool};
 use tokio::signal;
 
 use crate::config::{Config, Datasource, Driver, Redis};

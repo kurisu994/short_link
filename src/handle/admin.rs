@@ -36,8 +36,7 @@ struct CreateLink {
 async fn create_link<'a>(
     State(pool): State<Arc<IState>>,
     Json(payload): Json<CreateLink>,
-) -> MessageResult<LinkHistory> {
+) -> MessageResult<String> {
     let res = link_service::create_link(pool, payload.url, payload.duration).await?;
-
-    Ok(Message::failed(&res))
+    Ok(Message::ok(res))
 }

@@ -2,18 +2,20 @@ use std::sync::Arc;
 
 use bb8::PooledConnection;
 use bb8_redis::{
-    redis::{AsyncCommands, cmd},
+    redis::{cmd, AsyncCommands},
     RedisConnectionManager,
 };
 use sqlx::MySql;
 
+use crate::idgen::YitIdHelper;
 use crate::link_base_service::{query_by_id, query_by_link_hash, save};
 use crate::pojo::link_history::LinkHistory;
+use crate::pojo::AppError;
 use crate::types::{HandlerResult, IState};
-use crate::utils::helper::{calculate_sha256, encode_base62};
+use crate::utils::helper::{calculate_sha256, decode_base62, encode_base62};
 
 const LINK_HASH_KEY: &'static str = "link:hash:";
-const LINK_ID_KEY: &'static str = "link:id:";
+const LINK_ID_KEY: &'static str = "link:origin:uri:";
 
 pub async fn create_link(
     pool: Arc<IState>,
@@ -23,19 +25,47 @@ pub async fn create_link(
     let db_pool = &pool.db_pool;
     let redis_pool = &pool.redis_pool;
     let redis_db = pool.redis_db.unwrap_or(0);
-    let link_hash = calculate_sha256(&link);
 
     let mut r_con = redis_pool.get().await?;
     cmd("SELECT").arg(redis_db).query_async(&mut *r_con).await?;
-    let id = query_unique_id(&mut r_con, db_pool, link_hash).await?;
+    let id = query_and_create(&mut r_con, db_pool, link).await?;
     Ok(encode_base62(id as usize))
 }
 
-async fn query_unique_id<'a>(
+pub async fn query_origin_url(pool: Arc<IState>, link_hash: String) -> Result<String, AppError> {
+    let id = decode_base62(&link_hash)?;
+    let db_pool = &pool.db_pool;
+    let redis_pool = &pool.redis_pool;
+    let redis_db = pool.redis_db.unwrap_or(0);
+    let mut r_con = redis_pool.get().await?;
+    cmd("SELECT").arg(redis_db).query_async(&mut *r_con).await?;
+
+    let link_id_key = format!("{}{}", LINK_ID_KEY, id);
+    let data: Option<String> = r_con.get(&link_id_key).await?;
+    if let Some(url) = data {
+        return Ok(url);
+    }
+    match query_by_id(db_pool, id as u64).await? {
+        None => Err(AppError::from(anyhow::anyhow!("invalid short link"))),
+        Some(history) => {
+            let url = history.origin_url.clone();
+            if let Err(err) = r_con
+                .set_nx::<String, String, String>(link_id_key, url)
+                .await
+            {
+                tracing::error!("cache url failed: {}", err)
+            }
+            Ok(history.origin_url)
+        }
+    }
+}
+
+async fn query_and_create<'a>(
     r_con: &mut PooledConnection<'a, RedisConnectionManager>,
     m_conn: &sqlx::Pool<MySql>,
-    link_hash: String,
-) -> Result<u64, crate::AppError> {
+    origin_link: String,
+) -> Result<u64, AppError> {
+    let link_hash = calculate_sha256(&origin_link);
     let data: Option<String> = r_con.get(format!("{}{}", LINK_HASH_KEY, link_hash)).await?;
     if let Some(id) = data {
         let id: u64 = id.parse()?;
@@ -43,28 +73,11 @@ async fn query_unique_id<'a>(
     }
     match query_by_link_hash(m_conn, &link_hash).await? {
         None => {
-
-            Ok(0)
-        },
-        Some(history) => Ok(history.id as u64),
-    }
-}
-
-async fn query_exist_short_link<'a>(
-    r_con: &mut PooledConnection<'a, RedisConnectionManager>,
-    m_conn: &sqlx::Pool<MySql>,
-    id: u64,
-) -> Result<Option<String>, crate::AppError> {
-    let link_id_key = format!("{}{}", LINK_ID_KEY, id);
-    let data: Option<String> = r_con.get(&link_id_key).await?;
-    if let Some(short_url) = data {
-        return Ok(Some(short_url));
-    }
-    match query_by_id(m_conn, id).await? {
-        None => Ok(None),
-        Some(history) => {
-            let url = encode_base62(history.id as usize);
-            Ok(Some(url))
+            let id = YitIdHelper::next_id();
+            let db = LinkHistory::from_url(id, origin_link, link_hash);
+            assert!(save(m_conn, db).await?, "生成短链失败");
+            Ok(id as u64)
         }
+        Some(history) => Ok(history.id as u64),
     }
 }
