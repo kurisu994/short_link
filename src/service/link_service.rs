@@ -2,15 +2,15 @@ use std::sync::Arc;
 
 use bb8::PooledConnection;
 use bb8_redis::{
-    redis::{cmd, AsyncCommands},
+    redis::{AsyncCommands, cmd},
     RedisConnectionManager,
 };
 use sqlx::MySql;
 
 use crate::idgen::YitIdHelper;
 use crate::link_base_service::{query_by_id, query_by_link_hash, save};
-use crate::pojo::link_history::LinkHistory;
 use crate::pojo::AppError;
+use crate::pojo::link_history::LinkHistory;
 use crate::types::{HandlerResult, IState};
 use crate::utils::helper::{calculate_sha256, decode_base62, encode_base62};
 
@@ -66,18 +66,31 @@ async fn query_and_create<'a>(
     origin_link: String,
 ) -> Result<u64, AppError> {
     let link_hash = calculate_sha256(&origin_link);
-    let data: Option<String> = r_con.get(format!("{}{}", LINK_HASH_KEY, link_hash)).await?;
+    let key = format!("{}{}", LINK_HASH_KEY, link_hash);
+    let data: Option<String> = r_con.get(&key).await?;
     if let Some(id) = data {
         let id: u64 = id.parse()?;
         return Ok(id);
     }
+
     match query_by_link_hash(m_conn, &link_hash).await? {
         None => {
             let id = YitIdHelper::next_id();
-            let db = LinkHistory::from_url(id, origin_link, link_hash);
+            let db = LinkHistory::from_url(id, &origin_link, link_hash);
             assert!(save(m_conn, db).await?, "生成短链失败");
+            let _ = set_cache(r_con, key, id, origin_link).await;
             Ok(id as u64)
         }
-        Some(history) => Ok(history.id as u64),
+        Some(history) => {
+            let id = history.id;
+            let _ = set_cache(r_con, key, id, origin_link).await;
+            Ok(id as u64)
+        }
     }
+}
+
+
+async fn set_cache<'a>(r_con: &mut PooledConnection<'a, RedisConnectionManager>, key: String, id: i64, origin_link: String) {
+    let _ = r_con.set::<String, i64, String>(key, id).await;
+    let _ = r_con.set::<String, String, String>(format!("{}{}", LINK_ID_KEY, id), origin_link).await;
 }

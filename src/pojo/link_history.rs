@@ -15,10 +15,10 @@ pub struct LinkHistory {
 }
 
 impl LinkHistory {
-    pub fn from_url(id: i64, origin_url: String, link_hash: String) -> Self {
+    pub fn from_url(id: i64, origin_url: &str, link_hash: String) -> Self {
         Self {
             id,
-            origin_url,
+            origin_url: origin_url.to_string(),
             link_type: Some(LinkType::INTERIM.to_value()),
             expire_date: None,
             active: true,
