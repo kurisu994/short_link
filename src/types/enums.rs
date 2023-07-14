@@ -1,7 +1,9 @@
 pub enum LinkType {
     /// 短期的
+    #[allow(dead_code)]
     INTERIM,
     /// 长期的
+    #[allow(dead_code)]
     PERSIST,
 }
 
