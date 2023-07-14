@@ -2,11 +2,10 @@ use std::env;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::{http::StatusCode, response::IntoResponse};
 use bb8_redis::RedisConnectionManager;
-use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool};
+use sqlx::mysql::MySqlPoolOptions;
 use tokio::signal;
 
 use crate::config::{Config, Datasource, Driver, Redis};
@@ -14,12 +13,14 @@ use crate::types::IState;
 
 pub async fn create_state() -> Arc<IState> {
     let cfg = load_config("application.yaml").unwrap_or_default();
+    let redis_db = cfg.redis.database;
     let db_pool = create_db_pool(cfg.datasource).await;
     let redis_pool = create_redis_pool(cfg.redis).await;
     // 创建状态对象
     Arc::new(IState {
         db_pool,
         redis_pool,
+        redis_db,
     })
 }
 
