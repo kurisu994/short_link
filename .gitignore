@@ -3,5 +3,5 @@
 /tmp/
 /logs/
 .config
-.*.local
+*.local
 .sqlx

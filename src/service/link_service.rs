@@ -50,7 +50,7 @@ pub async fn query_origin_url(pool: Arc<IState>, link_hash: String) -> Result<St
         Some(history) => {
             let url = history.origin_url.clone();
             if let Err(err) = r_con
-                .set_nx::<String, String, String>(link_id_key, url)
+                .set_nx::<String, String, isize>(link_id_key, url)
                 .await
             {
                 tracing::error!("cache url failed: {}", err)

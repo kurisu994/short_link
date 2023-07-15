@@ -1,6 +1,6 @@
 #/bin/bash
 
-docker build -t short-link:latest -f ./Dockerfile --no-cache .
+docker build -t short-link:latest -f ./Dockerfile.local --no-cache .
 
 docker stop short-link
 

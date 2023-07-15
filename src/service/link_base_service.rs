@@ -21,9 +21,9 @@ pub async fn query_by_link_hash(
     let history_res = sqlx::query_as::<_, LinkHistory>(
         "select * from link_history where link_hash = ? and active = 1",
     )
-    .bind(link_hash)
-    .fetch_optional(m_conn)
-    .await?;
+        .bind(link_hash)
+        .fetch_optional(m_conn)
+        .await?;
     Ok(history_res)
 }
 

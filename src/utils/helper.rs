@@ -18,8 +18,8 @@ const SCALE: usize = 62;
 /// ```
 ///  let res = helper::encode_base62(63);
 ///  assert_eq!(res, "11");
-///  let res = helper::encode_base62(1687704559678);
-///  assert_eq!(res, "TiCiKz8");
+///  let res = helper::encode_base62(28555021769541);
+///  assert_eq!(res, "86j5FIof");
 /// ```
 #[allow(dead_code)]
 pub fn encode_base62(data: usize) -> String {
@@ -102,5 +102,17 @@ mod tests {
     fn sha_to_256() {
         let result = calculate_sha256("abcd");
         assert_eq!(result, "iNQmb9TmM40TuEX88olXnSCciXgjuSF9o-Fhk28DFYk");
+    }
+
+    #[test]
+    fn number_to_base62() {
+        let result = encode_base62(28555021769541);
+        assert_eq!(result, "86j5FIof");
+    }
+
+    #[test]
+    fn base62_to_number() {
+        let result = decode_base62("86jVtiUv").unwrap();
+        assert_eq!(result, 28555415586117);
     }
 }

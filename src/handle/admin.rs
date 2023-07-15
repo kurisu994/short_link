@@ -33,7 +33,7 @@ struct CreateLink {
     duration: Option<u64>,
 }
 
-async fn create_link<'a>(
+async fn create_link(
     State(pool): State<Arc<IState>>,
     Json(payload): Json<CreateLink>,
 ) -> MessageResult<String> {

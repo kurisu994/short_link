@@ -1,8 +1,6 @@
 FROM rust:1.70 as builder
 
 RUN USER=root cargo new --bin short_link
-# user github-action don't need this config
-COPY ./.config/config.toml /usr/local/cargo/config.toml
 
 WORKDIR ./short_link
 COPY ./Cargo.toml ./Cargo.toml
