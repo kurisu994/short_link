@@ -1,9 +1,9 @@
-pub mod enums;
-
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::Redirect;
 
 use crate::Message;
+
+pub mod enums;
 
 #[allow(dead_code)]
 pub type HandlerResult<T> = Result<T, crate::AppError>;

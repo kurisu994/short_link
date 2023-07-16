@@ -4,7 +4,9 @@ use axum::extract::{Query, State};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
+use validator::Validate;
 
+use crate::pojo::AppError;
 use crate::{
     link_service,
     pojo::{link_history::LinkHistory, Message, Pagination},
@@ -26,10 +28,11 @@ async fn link_list<'a>(
     Ok(Message::failed(""))
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Validate, Debug)]
 #[allow(dead_code)]
 struct CreateLink {
-    url: String,
+    #[validate(url(message = "无效"), required(message = "不能为空"))]
+    url: Option<String>,
     duration: Option<u64>,
 }
 
@@ -37,6 +40,9 @@ async fn create_link(
     State(pool): State<Arc<IState>>,
     Json(payload): Json<CreateLink>,
 ) -> MessageResult<String> {
-    let res = link_service::create_link(pool, payload.url, payload.duration).await?;
+    if let Err(e) = payload.validate() {
+        return Err(AppError::from(e));
+    }
+    let res = link_service::create_link(pool, payload.url.unwrap(), payload.duration).await?;
     Ok(Message::ok(res))
 }

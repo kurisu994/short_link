@@ -17,3 +17,8 @@ redis:
   max_size: 10
   database: 2
   
+logging:
+  max_history: 7
+  max_size: 1GB
+  level: info
+  

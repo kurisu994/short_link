@@ -2,15 +2,15 @@ use std::sync::Arc;
 
 use bb8::PooledConnection;
 use bb8_redis::{
-    redis::{AsyncCommands, cmd},
+    redis::{cmd, AsyncCommands},
     RedisConnectionManager,
 };
 use sqlx::MySql;
 
 use crate::idgen::YitIdHelper;
 use crate::link_base_service::{query_by_id, query_by_link_hash, save};
-use crate::pojo::AppError;
 use crate::pojo::link_history::LinkHistory;
+use crate::pojo::AppError;
 use crate::types::{HandlerResult, IState};
 use crate::utils::helper::{calculate_sha256, decode_base62, encode_base62};
 
@@ -89,8 +89,14 @@ async fn query_and_create<'a>(
     }
 }
 
-
-async fn set_cache<'a>(r_con: &mut PooledConnection<'a, RedisConnectionManager>, key: String, id: i64, origin_link: String) {
+async fn set_cache<'a>(
+    r_con: &mut PooledConnection<'a, RedisConnectionManager>,
+    key: String,
+    id: i64,
+    origin_link: String,
+) {
     let _ = r_con.set::<String, i64, String>(key, id).await;
-    let _ = r_con.set::<String, String, String>(format!("{}{}", LINK_ID_KEY, id), origin_link).await;
+    let _ = r_con
+        .set::<String, String, String>(format!("{}{}", LINK_ID_KEY, id), origin_link)
+        .await;
 }

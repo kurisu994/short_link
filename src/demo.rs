@@ -6,6 +6,7 @@ use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
+use tracing::error;
 
 use crate::idgen::YitIdHelper;
 use crate::pojo::AppError;
@@ -53,7 +54,7 @@ async fn using_connection_pool_redis(
 
 pub async fn gen_union_id() -> MessageResult<i64> {
     let next_id = YitIdHelper::next_id();
-    println!("next_id: {}", next_id);
+    error!("next_id: {}", next_id);
     Ok(Message::ok(next_id))
 }
 

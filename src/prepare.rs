@@ -4,24 +4,28 @@ use std::time::Duration;
 
 use axum::{http::StatusCode, response::IntoResponse};
 use bb8_redis::RedisConnectionManager;
-use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool};
+use sqlx::mysql::MySqlPoolOptions;
 use tokio::signal;
 
-use crate::config::{Config, Datasource, Driver, Redis};
+use crate::config::{Config, Datasource, Driver, Logging, Redis};
 use crate::types::IState;
 
-pub async fn create_state() -> Arc<IState> {
+pub async fn create_state() -> (Arc<IState>, Logging) {
     let cfg = load_config("application.yaml").unwrap_or_default();
+    tracing::info!("{:?}",cfg);
     let redis_db = cfg.redis.database;
     let db_pool = create_db_pool(cfg.datasource).await;
     let redis_pool = create_redis_pool(cfg.redis).await;
-    // 创建状态对象
-    Arc::new(IState {
-        db_pool,
-        redis_pool,
-        redis_db,
-    })
+
+    (
+        Arc::new(IState {
+            db_pool,
+            redis_pool,
+            redis_db,
+        }),
+        cfg.logging,
+    )
 }
 
 pub async fn handler_404() -> impl IntoResponse {
@@ -36,7 +40,7 @@ pub async fn shutdown_signal() {
     };
 
     #[cfg(unix)]
-    let terminate = async {
+        let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
@@ -44,7 +48,7 @@ pub async fn shutdown_signal() {
     };
 
     #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
+        let terminate = std::future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => {},
