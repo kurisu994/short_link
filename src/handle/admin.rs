@@ -19,7 +19,7 @@ pub fn router() -> Router<Arc<IState>> {
         .route("/link/create", post(create_link))
 }
 
-async fn link_list<'a>(
+async fn link_list(
     State(_pool): State<Arc<IState>>,
     pagination: Option<Query<Pagination>>,
 ) -> MessageResult<Vec<LinkHistory>> {

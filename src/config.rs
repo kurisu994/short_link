@@ -8,7 +8,6 @@ pub trait Driver {
 pub struct Config {
     pub datasource: Datasource,
     pub redis: Redis,
-    pub logging: Logging,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -32,19 +31,12 @@ pub struct Redis {
     pub database: Option<usize>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Logging {
-    pub max_history: Option<i32>,
-    pub max_size: Option<String>,
-    pub level: Option<String>,
-}
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             datasource: Datasource::default(),
             redis: Redis::default(),
-            logging: Logging::default(),
         }
     }
 }
@@ -72,16 +64,6 @@ impl Default for Redis {
             password: None,
             max_size: None,
             database: Some(0),
-        }
-    }
-}
-
-impl Default for Logging {
-    fn default() -> Self {
-        Self {
-            max_history: Some(7),
-            max_size: Some("1GB".to_string()),
-            level: Some("info".to_string()),
         }
     }
 }

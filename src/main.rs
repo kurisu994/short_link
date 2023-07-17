@@ -7,8 +7,6 @@ use axum::http::Method;
 use axum::Router;
 use chrono::Local;
 use tower_http::cors::{Any, CorsLayer};
-use tower_http::trace;
-use tower_http::trace::TraceLayer;
 use tracing::Level;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::fmt::time::FormatTime;
@@ -18,16 +16,14 @@ use tracing_subscriber::util::SubscriberInitExt;
 
 use idgen::{IdGeneratorOptions, YitIdHelper};
 
-use crate::config::Logging;
 use crate::{
     pojo::AppError,
     pojo::Message,
     service::{link_base_service, link_service},
-    types::{HandlerResult, IState, MessageResult, RedirectResponse, RedirectResult},
+    types::{IState, RedirectResult},
 };
 
 mod config;
-mod demo;
 mod handle;
 mod idgen;
 mod pojo;
@@ -38,9 +34,10 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
+    print_banner();
+    init_log();
     YitIdHelper::set_id_generator(IdGeneratorOptions::default());
-    let (state, logging) = prepare::create_state().await;
-    init_log(logging);
+    let state = prepare::create_state().await;
     if let Err(err) = run_server(state).await {
         tracing::error!("Server error: {}", err);
     }
@@ -54,28 +51,24 @@ async fn run_server(state: Arc<IState>) -> Result<(), axum::Error> {
             Method::PUT,
             Method::DELETE,
         ]))
-        .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
-                .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO)),
-        )
         .fallback(prepare::handler_404)
         .with_state(state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8008));
-    tracing::info!("server start success, listening on {}", addr);
+    tracing::info!(
+        " - Local:   http://{}:{}",
+        "127.0.0.1",
+        8008);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(prepare::shutdown_signal())
         .await
         .unwrap();
-
     Ok(())
 }
 
 fn api_router() -> Router<Arc<IState>> {
     Router::new()
-        .merge(demo::router())
         .merge(handle::api::router())
         .merge(handle::admin::router())
 }
@@ -88,8 +81,7 @@ impl FormatTime for LocalTimer {
     }
 }
 
-fn init_log(logging: Logging) {
-    let log_info = logging.level.unwrap_or("debug".to_string());
+fn init_log() {
     let info_file = tracing_appender::rolling::daily("./logs", "short-link-all.log")
         .with_max_level(Level::INFO);
     let error_file = tracing_appender::rolling::daily("./logs", "short-link-err.log")
@@ -97,12 +89,13 @@ fn init_log(logging: Logging) {
     let all_files = info_file.and(error_file);
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::from_str(&format!("short_link={}", log_info))
+            tracing_subscriber::EnvFilter::from_str(&"short_link=info")
                 .unwrap_or_else(|_| "short_link=debug".into()),
         )
         .with(
             tracing_subscriber::fmt::layer()
-                .compact()
+                .pretty()
+                .with_ansi(true)
                 .with_file(false)
                 .with_timer(LocalTimer)
                 .with_writer(io::stdout),
@@ -117,3 +110,16 @@ fn init_log(logging: Logging) {
         )
         .init()
 }
+
+fn print_banner() {
+    let banner = r#"
+    ███████╗██╗  ██╗ ██████╗ ██████╗ ████████╗    ██╗     ██╗███╗   ██╗██╗  ██╗
+    ██╔════╝██║  ██║██╔═══██╗██╔══██╗╚══██╔══╝    ██║     ██║████╗  ██║██║ ██╔╝
+    ███████╗███████║██║   ██║██████╔╝   ██║       ██║     ██║██╔██╗ ██║█████╔╝
+    ╚════██║██╔══██║██║   ██║██╔══██╗   ██║       ██║     ██║██║╚██╗██║██╔═██╗
+    ███████║██║  ██║╚██████╔╝██║  ██║   ██║       ███████╗██║██║ ╚████║██║  ██╗
+    ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝       ╚══════╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝
+"#;
+    println!("{}", banner);
+}
+
