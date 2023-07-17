@@ -2078,6 +2078,7 @@ dependencies = [
  "pin-project-lite",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -2161,6 +2162,7 @@ dependencies = [
  "sharded-slab",
  "smallvec",
  "thread_local",
+ "time 0.3.23",
  "tracing",
  "tracing-core",
  "tracing-log",

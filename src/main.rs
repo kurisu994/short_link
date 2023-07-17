@@ -5,20 +5,26 @@ use std::sync::Arc;
 
 use axum::http::Method;
 use axum::Router;
+use chrono::Local;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::trace;
+use tower_http::trace::TraceLayer;
+use tracing::Level;
+use tracing_subscriber::fmt::format::Writer;
+use tracing_subscriber::fmt::time::FormatTime;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 use idgen::{IdGeneratorOptions, YitIdHelper};
 
+use crate::config::Logging;
 use crate::{
     pojo::AppError,
     pojo::Message,
     service::{link_base_service, link_service},
     types::{HandlerResult, IState, MessageResult, RedirectResponse, RedirectResult},
 };
-use crate::config::Logging;
 
 mod config;
 mod demo;
@@ -34,7 +40,6 @@ mod utils;
 async fn main() {
     YitIdHelper::set_id_generator(IdGeneratorOptions::default());
     let (state, logging) = prepare::create_state().await;
-
     init_log(logging);
     if let Err(err) = run_server(state).await {
         tracing::error!("Server error: {}", err);
@@ -49,6 +54,11 @@ async fn run_server(state: Arc<IState>) -> Result<(), axum::Error> {
             Method::PUT,
             Method::DELETE,
         ]))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
+                .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO)),
+        )
         .fallback(prepare::handler_404)
         .with_state(state);
 
@@ -70,28 +80,40 @@ fn api_router() -> Router<Arc<IState>> {
         .merge(handle::admin::router())
 }
 
+struct LocalTimer;
+
+impl FormatTime for LocalTimer {
+    fn format_time(&self, w: &mut Writer<'_>) -> std::fmt::Result {
+        write!(w, "{}", Local::now().format("%Y-%m-%d %H:%M:%S.%3f"))
+    }
+}
+
 fn init_log(logging: Logging) {
     let log_info = logging.level.unwrap_or("debug".to_string());
     let info_file = tracing_appender::rolling::daily("./logs", "short-link-all.log")
-        .with_max_level(tracing::Level::INFO);
+        .with_max_level(Level::INFO);
     let error_file = tracing_appender::rolling::daily("./logs", "short-link-err.log")
-        .with_max_level(tracing::Level::ERROR);
+        .with_max_level(Level::ERROR);
     let all_files = info_file.and(error_file);
-
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::from_str(&format!("short_link={}", log_info))
                 .unwrap_or_else(|_| "short_link=debug".into()),
         )
-        .with(tracing_subscriber::fmt::layer()
-            .pretty()
-            .with_file(false)
-            .with_writer(io::stdout)
+        .with(
+            tracing_subscriber::fmt::layer()
+                .compact()
+                .with_file(false)
+                .with_timer(LocalTimer)
+                .with_writer(io::stdout),
         )
-        .with(tracing_subscriber::fmt::layer()
-            .pretty()
-            .with_file(false)
-            .with_writer(all_files)
+        .with(
+            tracing_subscriber::fmt::layer()
+                .compact()
+                .with_ansi(false)
+                .with_file(false)
+                .with_timer(LocalTimer)
+                .with_writer(all_files),
         )
-        .init();
+        .init()
 }
