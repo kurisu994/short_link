@@ -1,19 +1,27 @@
 # 目前仅支持mysql
 datasource:
+  # 数据库地址
   host: localhost
+  # 端口号
   port: 3306
+  # 用户名
   user: root
+  # 密码
   password: 123456
   # 连接池最大数量
   max_pool_size: 30
   # 最大空闲时间（秒）
   idle_timeout: 120
+  # 数据库名
   db_name: short_link
 
 # 暂不支持集群和ssh
 redis:
   host: localhost
   port: 6379
+  user_name: xx      # 用户名 redis6.0以上支持 未配置的情况请删除这行
+  password: 123456   # 密码 未配置的情况请删除这行
+  # 最大连接数
   max_size: 10
+  # 使用的db
   database: 2
-
