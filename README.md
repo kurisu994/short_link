@@ -37,5 +37,11 @@ docker run -d  \
   -v "$PWD/logs":/usr/app/logs \
   short-link:latest
 ```
-这里的`--link mysql`和`--link redis`根据实际情况自行调整。
+这里的`--link mysql`和`--link redis`根据实际情况自行调整。 
+
 docker接收`DATABASE_URL`和`REDIS_URL`这两个环境变量来指定数据库连接地址和redis地址，并且这两个环境变量的优先级会高于配置文件的地址。
+
+### 计划
+1. 新增请求拦截器，对请求参数和响应进行日志打印。
+2. 新增页面用于配置和统计
+3. 使用定时器定期清除过期的链接数据
