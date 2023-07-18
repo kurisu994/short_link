@@ -16,5 +16,5 @@ docker run -d  \
   -e REDIS_URL=redis://redis:6379 \
   -p 9222:8008 \
   -v ./application.yaml:/usr/app/application.yaml \
-  -v ./logs:/logs \
+  -v ./logs:/usr/app/logs \
   short-link:latest
