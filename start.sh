@@ -15,6 +15,6 @@ docker run -d  \
   -e DATABASE_URL=mysql://root:123456@mysql:3306/short_link \
   -e REDIS_URL=redis://redis:6379 \
   -p 9222:8008 \
-  -v ./application.yaml:/usr/app/application.yaml \
-  -v ./logs:/usr/app/logs \
+  -v "$PWD/application.yaml":/usr/app/application.yaml \
+  -v "$PWD/logs":/usr/app/logs \
   short-link:latest
