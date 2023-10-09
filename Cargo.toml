@@ -11,53 +11,28 @@ description = "使用AXUM构建的短链接服务"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-<<<<<<< HEAD
-anyhow = "1.0.71"
-async-trait = "0.1.68"
-axum = { version = "0.6", features = ["headers", "macros"] }
-base64 = "0.21.2"
-bb8 = "0.8.1"
-bb8-redis = "0.13.1"
-chrono = { version = "0.4.26", features = ["serde"] }
-dotenv = "0.15.0"
-log = "0.4.18"
-redis = { version = "0.23.0", features = ["tokio"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-serde_yaml = "0.9.21"
-sha2 = "0.10.6"
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "chrono", "mysql", "macros"] }
-tokio = { version = "1.28.2", features = ["full"] }
-tower = { version = "0.4.13", features = ["util", "filter"] }
-tower-http = { version = "0.4", features = ["cors", "trace"] }
-tracing = "0.1.37"
-tracing-appender = "0.2.2"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "time"] }
-validator = { version = "0.16.0", features = ["derive"] }
-=======
-anyhow = "^1.0.71"
-async-trait = "^0.1.71"
-axum = { version = "^0.6", features = ["headers", "macros"] }
-base64 = "^0.21.2"
+anyhow = "^1.0.75"
+async-trait = "^0.1.73"
+axum = { version = "^0.6.20", features = ["headers", "macros"] }
+base64 = "^0.21.4"
 bb8 = "^0.8.1"
 bb8-redis = "^0.13.1"
-chrono = { version = "^0.4.26", features = ["serde"] }
+chrono = { version = "^0.4.31", features = ["serde"] }
 dotenv = "^0.15.0"
-log = "^0.4.19"
-redis = { version = "^0.23.0", features = ["tokio"] }
-serde = { version = "^1.0.166", features = ["derive"] }
-serde_json = "^1.0.100"
-serde_yaml = "^0.9.22"
-sha2 = "^0.10.7"
-sqlx = { version = "^0.7", features = ["runtime-tokio-rustls", "chrono", "mysql", "macros"] }
-tokio = { version = "^1.28.2", features = ["full"] }
+log = "^0.4.20"
+redis = { version = "^0.23.3", features = ["tokio"] }
+serde = { version = "^1.0.188", features = ["derive"] }
+serde_json = "^1.0.107"
+serde_yaml = "^0.9.25"
+sha2 = "^0.10.8"
+sqlx = { version = "^0.7.2", features = ["runtime-tokio-rustls", "chrono", "mysql", "macros"] }
+tokio = { version = "^1.32.0", features = ["full"] }
 tower = { version = "^0.4.13", features = ["util", "filter"] }
-tower-http = { version = "^0.4", features = ["cors", "trace"] }
+tower-http = { version = "^0.4.4", features = ["cors", "trace"] }
 tracing = "^0.1.37"
 tracing-appender = "^0.2.2"
 tracing-subscriber = { version = "^0.3.17", features = ["env-filter", "time"] }
 validator = { version = "^0.16.1", features = ["derive"] }
->>>>>>> 3f2bdb7 (🚀 feat(*): update deps)
 
 [profile.release]
 codegen-units = 1
