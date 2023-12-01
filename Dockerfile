@@ -1,4 +1,4 @@
-FROM rust:1.70 as builder
+FROM rust:1.72 as builder
 
 RUN USER=root cargo new --bin short_link
 
