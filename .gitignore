@@ -5,3 +5,4 @@
 .config
 *.local
 .sqlx
+*.local.*
