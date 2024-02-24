@@ -126,8 +126,8 @@ mod test {
 
     #[test]
     pub fn load_config_test() {
-        let file = "application.yaml";
-        match load_config(file) {
+        let file = "application.local.yaml";
+        match load_config(file, "application.yaml") {
             None => {
                 println!("None");
             }
