@@ -31,7 +31,6 @@ pub struct Redis {
     pub database: Option<usize>,
 }
 
-
 impl Default for Config {
     fn default() -> Self {
         Self {

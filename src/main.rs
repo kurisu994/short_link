@@ -3,8 +3,14 @@ use std::net::SocketAddr;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use axum::http::Method;
+use axum::http::{Method, Request};
 use axum::Router;
+use axum::{
+    body::{Body, Bytes},
+    http::StatusCode,
+    middleware::{self, Next},
+    response::{IntoResponse, Response},
+};
 use chrono::Local;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::Level;
@@ -13,6 +19,7 @@ use tracing_subscriber::fmt::time::FormatTime;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use uuid::Uuid;
 
 use idgen::{IdGeneratorOptions, YitIdHelper};
 
@@ -45,6 +52,7 @@ async fn main() {
 
 async fn run_server(state: Arc<IState>) -> Result<(), axum::Error> {
     let app = api_router()
+        .layer(middleware::from_fn(print_request_response))
         .layer(CorsLayer::new().allow_origin(Any).allow_methods([
             Method::GET,
             Method::POST,
@@ -55,10 +63,7 @@ async fn run_server(state: Arc<IState>) -> Result<(), axum::Error> {
         .with_state(state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8008));
-    tracing::info!(
-        " - Local:   http://{}:{}",
-        "127.0.0.1",
-        8008);
+    tracing::info!(" - Local:   http://{}:{}", "127.0.0.1", 8008);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(prepare::shutdown_signal())
@@ -89,8 +94,8 @@ fn init_log() {
     let all_files = info_file.and(error_file);
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::from_str(&"short_link=info")
-                .unwrap_or_else(|_| "short_link=debug".into()),
+            tracing_subscriber::EnvFilter::from_str(&"short_link=trace")
+                .unwrap_or_else(|_| "short_link=trace".into()),
         )
         .with(
             tracing_subscriber::fmt::layer()
@@ -111,6 +116,53 @@ fn init_log() {
         .init()
 }
 
+async fn print_request_response(
+    req: Request<Body>,
+    next: Next<Body>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let (parts, body) = req.into_parts();
+    // 打印参数 fixme 需要完善
+    let uid = Uuid::new_v4()
+        .to_string()
+        .split("-")
+        .last()
+        .unwrap_or("")
+        .to_string();
+    let bytes = buffer_and_print(&format!("request[{}]", uid), body).await?;
+    let req = Request::from_parts(parts, Body::from(bytes));
+
+    let res = next.run(req).await;
+
+    // 打印响应
+    let (parts, body) = res.into_parts();
+    let bytes = buffer_and_print(&format!("response[{}]", uid), body).await?;
+    let res = Response::from_parts(parts, Body::from(bytes));
+
+    Ok(res)
+}
+
+async fn buffer_and_print<B>(direction: &str, body: B) -> Result<Bytes, (StatusCode, String)>
+where
+    B: axum::body::HttpBody<Data = Bytes>,
+    B::Error: std::fmt::Display,
+{
+    let bytes = match body.collect().await {
+        Ok(collected) => collected.to_bytes(),
+        Err(err) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!("failed to read {direction} body: {err}"),
+            ));
+        }
+    };
+
+    if let Ok(body) = std::str::from_utf8(&bytes) {
+        tracing::trace!("{direction} body = {body:?}");
+    }
+
+    Ok(bytes)
+}
+
 fn print_banner() {
     let banner = r#"
     ███████╗██╗  ██╗ ██████╗ ██████╗ ████████╗    ██╗     ██╗███╗   ██╗██╗  ██╗
@@ -122,4 +174,3 @@ fn print_banner() {
 "#;
     println!("{}", banner);
 }
-

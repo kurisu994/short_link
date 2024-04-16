@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use axum::{http::StatusCode, response::IntoResponse};
 use bb8_redis::RedisConnectionManager;
-use sqlx::{MySql, Pool};
 use sqlx::mysql::MySqlPoolOptions;
+use sqlx::{MySql, Pool};
 use tokio::signal;
 
 use crate::config::{Config, Datasource, Driver, Redis};
@@ -36,7 +36,7 @@ pub async fn shutdown_signal() {
     };
 
     #[cfg(unix)]
-        let terminate = async {
+    let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
@@ -44,7 +44,7 @@ pub async fn shutdown_signal() {
     };
 
     #[cfg(not(unix))]
-        let terminate = std::future::pending::<()>();
+    let terminate = std::future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => {},
