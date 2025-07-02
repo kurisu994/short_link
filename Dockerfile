@@ -7,7 +7,6 @@ COPY ./Cargo.toml ./Cargo.toml
 # Build empty app with downloaded dependencies to produce a stable image layer for next build
 RUN cargo build --release
 
-# Build web app with own code
 RUN rm src/*.rs
 ADD . ./
 RUN rm ./target/release/deps/short_link*
