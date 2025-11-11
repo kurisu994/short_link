@@ -1,6 +1,5 @@
 use std::io;
 use std::net::SocketAddr;
-use std::str::FromStr;
 use std::sync::Arc;
 
 use axum::http::{Method, Request};
@@ -10,13 +9,14 @@ use axum::{
     http::StatusCode,
     middleware::{self, Next},
     response::{IntoResponse, Response},
+    serve,
 };
 use chrono::Local;
+use http_body_util::BodyExt;
 use tower_http::cors::{Any, CorsLayer};
-use tracing::Level;
+use tracing_subscriber::filter::EnvFilter;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::fmt::time::FormatTime;
-use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use uuid::Uuid;
@@ -64,8 +64,8 @@ async fn run_server(state: Arc<IState>) -> Result<(), axum::Error> {
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8008));
     tracing::info!(" - Local:   http://{}:{}", "127.0.0.1", 8008);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    serve(listener, app)
         .with_graceful_shutdown(prepare::shutdown_signal())
         .await
         .unwrap();
@@ -87,23 +87,28 @@ impl FormatTime for LocalTimer {
 }
 
 fn init_log() {
-    let info_file = tracing_appender::rolling::daily("./logs", "short-link-all.log")
-        .with_max_level(Level::INFO);
-    let error_file = tracing_appender::rolling::daily("./logs", "short-link-err.log")
-        .with_max_level(Level::ERROR);
-    let all_files = info_file.and(error_file);
+    // 创建日志目录（如果不存在）
+    std::fs::create_dir_all("./logs").ok();
+
+    // 创建按天滚动的日志文件
+    let file_appender = tracing_appender::rolling::daily("./logs", "short-link.log");
+
+    // 控制台输出和文件输出
+    let (console_writer, file_writer) = (io::stdout, file_appender);
+
+    // 设置日志级别过滤器
+    let env_filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("short_link=info"));
+
     tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::from_str(&"short_link=trace")
-                .unwrap_or_else(|_| "short_link=trace".into()),
-        )
+        .with(env_filter)
         .with(
             tracing_subscriber::fmt::layer()
                 .pretty()
                 .with_ansi(true)
                 .with_file(false)
                 .with_timer(LocalTimer)
-                .with_writer(io::stdout),
+                .with_writer(console_writer),
         )
         .with(
             tracing_subscriber::fmt::layer()
@@ -111,14 +116,14 @@ fn init_log() {
                 .with_ansi(false)
                 .with_file(false)
                 .with_timer(LocalTimer)
-                .with_writer(all_files),
+                .with_writer(file_writer),
         )
         .init()
 }
 
 async fn print_request_response(
     req: Request<Body>,
-    next: Next<Body>,
+    next: Next,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let (parts, body) = req.into_parts();
     // 打印参数 fixme 需要完善

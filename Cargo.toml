@@ -11,29 +11,30 @@ description = "使用AXUM构建的短链接服务"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-anyhow = "^1.0.82"
-async-trait = "^0.1.80"
-axum = { version = "^0.6.20", features = ["headers", "macros"] }
-base64 = "^0.21.7"
-bb8 = "^0.8.3"
-bb8-redis = "^0.13.1"
-chrono = { version = "^0.4.38", features = ["serde"] }
-dotenv = "^0.15.0"
-log = "^0.4.21"
-redis = { version = "^0.23.3", features = ["tokio"] }
-serde = { version = "^1.0.197", features = ["derive"] }
-serde_json = "^1.0.116"
-serde_yaml = "^0.9.33"
-sha2 = "^0.10.8"
-sqlx = { version = "^0.7.4", features = ["runtime-tokio-rustls", "chrono", "mysql", "macros"] }
-tokio = { version = "^1.37.0", features = ["full"] }
-tower = { version = "^0.4.13", features = ["util", "filter"] }
-tower-http = { version = "^0.4.4", features = ["cors", "trace"] }
-tracing = "^0.1.40"
-tracing-appender = "^0.2.3"
-tracing-subscriber = { version = "^0.3.18", features = ["env-filter", "time"] }
-uuid = { version = "^1.8.0", features = ["v4", "fast-rng", "macro-diagnostics"] }
-validator = { version = "^0.16.1", features = ["derive"] }
+anyhow = "1.0"
+async-trait = "0.1"
+axum = { version = "0.7", features = ["macros"] }
+base64 = "0.22"
+bb8 = "0.8"
+bb8-redis = "0.15"
+chrono = { version = "0.4", features = ["serde"] }
+dotenv = "0.15"
+http-body-util = "0.1"
+log = "0.4"
+redis = { version = "0.26", features = ["tokio"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+sha2 = "0.10"
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "chrono", "mysql", "macros"] }
+tokio = { version = "1.0", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "time"] }
+uuid = { version = "1.0", features = ["v4", "fast-rng", "macro-diagnostics"] }
+validator = { version = "0.18", features = ["derive"] }
 
 [profile.release]
 codegen-units = 1

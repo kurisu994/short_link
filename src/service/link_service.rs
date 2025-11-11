@@ -27,7 +27,7 @@ pub async fn create_link(
     let redis_db = pool.redis_db.unwrap_or(0);
 
     let mut r_con = redis_pool.get().await?;
-    cmd("SELECT").arg(redis_db).query_async(&mut *r_con).await?;
+    cmd("SELECT").arg(redis_db).query_async::<_, ()>(&mut *r_con).await?;
     let id = query_and_create(&mut r_con, db_pool, link).await?;
     Ok(encode_base62(id as usize))
 }
@@ -38,7 +38,7 @@ pub async fn query_origin_url(pool: Arc<IState>, link_hash: String) -> Result<St
     let redis_pool = &pool.redis_pool;
     let redis_db = pool.redis_db.unwrap_or(0);
     let mut r_con = redis_pool.get().await?;
-    cmd("SELECT").arg(redis_db).query_async(&mut *r_con).await?;
+    cmd("SELECT").arg(redis_db).query_async::<_, ()>(&mut *r_con).await?;
 
     let link_id_key = format!("{}{}", LINK_ID_KEY, id);
     let data: Option<String> = r_con.get(&link_id_key).await?;
