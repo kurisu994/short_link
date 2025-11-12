@@ -12,18 +12,32 @@
 - **AXUM**: 0.7.x (主要 Web 框架)
 - **SQLx**: 0.8.x (数据库 ORM)
 - **Redis**: 0.26.x (缓存客户端)
-- **Tower**: 0.5.x (中间件)
 - **Tower-HTTP**: 0.6.x (HTTP 中间件)
 - **Validator**: 0.18.x (数据验证)
 - **Base64**: 0.22.x (编码工具)
+- **bb8**: 0.8.x (连接池)
 - **bb8-redis**: 0.15.x (Redis 连接池)
 - **http-body-util**: 0.1.x (HTTP body 工具)
+- **Tokio**: 1.0.x (异步运行时)
+- **Serde**: 1.0.x (序列化/反序列化)
+- **Serde YAML**: 0.9.x (YAML 支持)
+- **Chrono**: 0.4.x (日期时间处理)
+- **SHA2**: 0.10.x (哈希算法)
+- **Tracing**: 0.1.x (结构化日志)
+- **Tracing Appender**: 0.2.x (日志文件追加)
+- **Tracing Subscriber**: 0.3.x (日志订阅器)
+- **UUID**: 1.0.x (唯一标识符)
+- **Anyhow**: 1.0.x (错误处理)
 
 ### 升级注意事项
 - **AXUM 0.7**: 移除了 `headers` 特性，改用 `http-body-util` 处理 HTTP body
 - **服务器启动**: 从 `axum::Server::bind` 改为 `axum::serve` + `tokio::net::TcpListener`
 - **中间件**: `Next` 不再需要泛型参数
 - **Redis**: 查询操作需要明确的类型注解以避免 never type fallback 警告
+- **bb8 连接池**: 使用 bb8 作为 Redis 连接池管理器，提供更好的并发性能
+- **Tracing**: 使用 tracing 系列crate进行结构化日志记录，支持文件滚动和多输出
+- **UUID**: 启用 fast-rng 和 macro-diagnostics 特性以提升性能和开发体验
+- **Serde YAML**: 用于配置文件的解析，支持复杂的嵌套结构
 
 # 语言设置
 - 所有回答必须使用中文
