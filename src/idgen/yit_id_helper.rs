@@ -5,18 +5,17 @@
 use crate::idgen::*;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::OnceLock;
 
 pub struct YitIdHelper;
 
-static mut ID_GEN_INSTANCE: Option<Arc<Mutex<DefaultIdGenerator>>> = None;
+static ID_GEN_INSTANCE: OnceLock<Arc<Mutex<DefaultIdGenerator>>> = OnceLock::new();
 
 impl YitIdHelper {
     fn id_gen_instance() -> Arc<Mutex<DefaultIdGenerator>> {
-        unsafe {
-            ID_GEN_INSTANCE
-                .get_or_insert_with(|| Arc::new(Mutex::new(DefaultIdGenerator::default())))
-                .clone()
-        }
+        ID_GEN_INSTANCE
+            .get_or_init(|| Arc::new(Mutex::new(DefaultIdGenerator::default())))
+            .clone()
     }
 
     #[allow(dead_code)]

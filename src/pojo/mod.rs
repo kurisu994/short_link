@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod link_history;
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub struct Pagination {
     pub page: usize,

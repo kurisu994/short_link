@@ -30,6 +30,7 @@
 - **Anyhow**: 1.0.x (错误处理)
 
 ### 升级注意事项
+- **Rust 2024 Edition**: 升级到 2024 edition，享受最新的语言特性和改进
 - **AXUM 0.7**: 移除了 `headers` 特性，改用 `http-body-util` 处理 HTTP body
 - **服务器启动**: 从 `axum::Server::bind` 改为 `axum::serve` + `tokio::net::TcpListener`
 - **中间件**: `Next` 不再需要泛型参数
@@ -38,6 +39,7 @@
 - **Tracing**: 使用 tracing 系列crate进行结构化日志记录，支持文件滚动和多输出
 - **UUID**: 启用 fast-rng 和 macro-diagnostics 特性以提升性能和开发体验
 - **Serde YAML**: 用于配置文件的解析，支持复杂的嵌套结构
+- **静态变量管理**: Rust 2024 对可变静态变量引用有更严格限制，使用 `std::sync::OnceLock` 替代手动管理
 
 # 语言设置
 - 所有回答必须使用中文
@@ -155,7 +157,7 @@ create table if not exists link_history
 
 ### 代码风格
 - 使用 `rustfmt.toml` 进行一致的格式化
-- 使用 Rust 2021 版本特性
+- 使用 Rust 2024 版本特性
 - 导入按 crate 粒度组织
 
 ### 错误处理
