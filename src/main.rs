@@ -133,16 +133,12 @@ async fn print_request_response(
         .unwrap_or("")
         .to_string();
 
-    // 打印请求入参信息
     tracing::info!("request[{}] - {} {} ", uid, parts.method, parts.uri);
 
-    // 打印请求体
     let bytes = buffer_and_print(&format!("request[{}]", uid), body).await?;
     let req = Request::from_parts(parts, Body::from(bytes));
 
     let res = next.run(req).await;
-
-    // 打印响应出参信息
     let (parts, body) = res.into_parts();
     let bytes = buffer_and_print(&format!("response[{}]", uid), body).await?;
     let res = Response::from_parts(parts, Body::from(bytes));
