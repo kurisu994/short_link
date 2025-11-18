@@ -1609,6 +1609,7 @@ dependencies = [
  "http-body-util",
  "redis 0.26.1",
  "serde",
+ "serde_json",
  "serde_yaml",
  "sha2",
  "sqlx",

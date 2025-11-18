@@ -24,18 +24,8 @@ async fn link_list(
     pagination: Option<Query<Pagination>>,
 ) -> MessageResult<LinkListResponse> {
     let Query(pagination) = pagination.unwrap_or_default();
-    tracing::info!("pagination is {:?}", pagination);
-
     match link_service::get_link_list(pool, pagination).await {
-        Ok(link_list_response) => {
-            tracing::info!("查询到 {} 条链接记录，总共 {} 条，第 {} 页，每页 {} 条，是否最后一页: {}",
-                link_list_response.data.len(),
-                link_list_response.total,
-                link_list_response.page,
-                link_list_response.page_size,
-                link_list_response.last_page);
-            Ok(Message::ok(link_list_response))
-        }
+        Ok(link_list_response) => Ok(Message::ok(link_list_response)),
         Err(e) => {
             tracing::error!("查询链接列表失败: {}", e);
             Err(AppError::from(e))

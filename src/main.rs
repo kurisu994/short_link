@@ -97,8 +97,8 @@ fn init_log() {
     let (console_writer, file_writer) = (io::stdout, file_appender);
 
     // 设置日志级别过滤器
-    let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("short_link=info"));
+    let env_filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("short_link=info"));
 
     tracing_subscriber::registry()
         .with(env_filter)
@@ -126,19 +126,23 @@ async fn print_request_response(
     next: Next,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let (parts, body) = req.into_parts();
-    // 打印参数 fixme 需要完善
     let uid = Uuid::new_v4()
         .to_string()
         .split("-")
         .last()
         .unwrap_or("")
         .to_string();
+
+    // 打印请求入参信息
+    tracing::info!("request[{}] - {} {} ", uid, parts.method, parts.uri);
+
+    // 打印请求体
     let bytes = buffer_and_print(&format!("request[{}]", uid), body).await?;
     let req = Request::from_parts(parts, Body::from(bytes));
 
     let res = next.run(req).await;
 
-    // 打印响应
+    // 打印响应出参信息
     let (parts, body) = res.into_parts();
     let bytes = buffer_and_print(&format!("response[{}]", uid), body).await?;
     let res = Response::from_parts(parts, Body::from(bytes));
@@ -162,7 +166,15 @@ where
     };
 
     if let Ok(body) = std::str::from_utf8(&bytes) {
-        tracing::trace!("{direction} body = {body:?}");
+        if let Ok(json_value) = serde_json::from_str::<serde_json::Value>(body) {
+            if let Ok(formatted_json) = serde_json::to_string_pretty(&json_value) {
+                tracing::info!("{direction} body (JSON):\n{}", formatted_json);
+            } else {
+                tracing::info!("{direction} body = {}", body);
+            }
+        } else {
+            tracing::info!("{direction} body = {}", body);
+        }
     }
 
     Ok(bytes)
