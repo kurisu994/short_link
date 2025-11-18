@@ -10,13 +10,13 @@ RUN apk add --no-cache \
 
 RUN USER=root cargo new --bin short_link
 
-WORKDIR ./short_link
+WORKDIR /short_link
 COPY ./Cargo.toml ./Cargo.toml
 # Build empty app with downloaded dependencies to produce a stable image layer for next build
 RUN cargo build --release
 
 RUN rm src/*.rs
-ADD . ./
+COPY . .
 RUN rm ./target/release/deps/short_link*
 RUN cargo build --release
 
