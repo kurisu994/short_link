@@ -5,12 +5,11 @@ use bb8_redis::{
     redis::{cmd, AsyncCommands},
     RedisConnectionManager,
 };
-use sqlx::MySql;
 
 use crate::idgen::YitIdHelper;
-use crate::link_base_service::{query_by_id, query_by_link_hash, save};
-use crate::pojo::link_history::LinkHistory;
-use crate::pojo::AppError;
+use crate::link_base_service::{query_by_id, query_by_link_hash, save, query_all_with_pagination, count_total_links};
+use crate::pojo::link_history::{LinkHistory, LinkHistoryResponse, LinkListResponse};
+use crate::pojo::{AppError, Pagination};
 use crate::types::{HandlerResult, IState};
 use crate::utils::helper::{calculate_sha256, decode_base62, encode_base62};
 
@@ -45,7 +44,7 @@ pub async fn query_origin_url(pool: Arc<IState>, link_hash: String) -> Result<St
     if let Some(url) = data {
         return Ok(url);
     }
-    match query_by_id(db_pool, id as u64).await? {
+    match query_by_id(db_pool, id as i64).await? {
         None => Err(AppError::from(anyhow::anyhow!("invalid short link"))),
         Some(history) => {
             let url = history.origin_url.clone();
@@ -62,7 +61,7 @@ pub async fn query_origin_url(pool: Arc<IState>, link_hash: String) -> Result<St
 
 async fn query_and_create<'a>(
     r_con: &mut PooledConnection<'a, RedisConnectionManager>,
-    m_conn: &sqlx::Pool<MySql>,
+    m_conn: &sqlx::PgPool,
     origin_link: String,
 ) -> Result<u64, AppError> {
     let link_hash = calculate_sha256(&origin_link);
@@ -99,4 +98,41 @@ async fn set_cache<'a>(
     let _ = r_con
         .set::<String, String, String>(format!("{}{}", LINK_ID_KEY, id), origin_link)
         .await;
+}
+
+pub async fn get_link_list(
+    pool: Arc<IState>,
+    pagination: Pagination,
+) -> HandlerResult<LinkListResponse> {
+    let db_pool = &pool.db_pool;
+
+    // 先查询总数
+    let total = count_total_links(db_pool).await?;
+
+    // 如果总数为0，直接返回空结果，避免执行不必要的分页查询
+    if total == 0 {
+        return Ok(LinkListResponse {
+            data: vec![],
+            page: pagination.page,
+            page_size: pagination.page_size,
+            total: 0,
+            last_page: true,
+        });
+    }
+
+    // 获取分页数据
+    let links = query_all_with_pagination(db_pool, &pagination).await?;
+    let response_links: Vec<LinkHistoryResponse> = links.into_iter().map(|link| link.to_response()).collect();
+
+    // 计算是否为最后一页
+    let total_pages = ((total as f64) / (pagination.page_size as f64)).ceil() as usize;
+    let last_page = pagination.page >= total_pages;
+
+    Ok(LinkListResponse {
+        data: response_links,
+        page: pagination.page,
+        page_size: pagination.page_size,
+        total,
+        last_page,
+    })
 }

@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use axum::{http::StatusCode, response::IntoResponse};
 use bb8_redis::RedisConnectionManager;
-use sqlx::mysql::MySqlPoolOptions;
-use sqlx::{MySql, Pool};
+use sqlx::postgres::PgPoolOptions;
+use sqlx::PgPool;
 use tokio::signal;
 
 use crate::config::{Config, Datasource, Driver, Redis};
@@ -54,7 +54,7 @@ pub async fn shutdown_signal() {
     tracing::info!("signal received, starting graceful shutdown");
 }
 
-async fn create_db_pool(datasource: Datasource) -> Pool<MySql> {
+async fn create_db_pool(datasource: Datasource) -> PgPool {
     let mut max_size = datasource.max_pool_size.unwrap_or(2 << 4);
     let min_size = 2 << 2;
     if max_size <= min_size {
@@ -63,7 +63,7 @@ async fn create_db_pool(datasource: Datasource) -> Pool<MySql> {
     let idle_timeout = datasource.idle_timeout.unwrap_or(120);
     let db_url = env::var("DATABASE_URL").unwrap_or_else(|_| datasource.to_link());
     tracing::info!("db_url: {}", db_url);
-    let db_pool = MySqlPoolOptions::new()
+    let db_pool = PgPoolOptions::new()
         .max_connections(max_size as u32)
         .min_connections(min_size as u32)
         .acquire_timeout(Duration::from_secs(15))

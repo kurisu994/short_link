@@ -44,8 +44,8 @@ impl Default for Datasource {
     fn default() -> Self {
         Self {
             host: Some("localhost".to_string()),
-            port: Some(3306),
-            user: Some("root".to_string()),
+            port: Some(5432),
+            user: Some("postgres".to_string()),
             password: None,
             max_pool_size: None,
             idle_timeout: None,
@@ -70,12 +70,12 @@ impl Default for Redis {
 impl Driver for Datasource {
     fn to_link(self) -> String {
         let host = self.host.unwrap_or("localhost".to_string());
-        let port = self.port.unwrap_or(3306);
-        let user = self.user.unwrap_or("root".to_string());
+        let port = self.port.unwrap_or(5432);
+        let user = self.user.unwrap_or("postgres".to_string());
         let password = self.password.unwrap_or("".to_string());
         let db_name = self.db_name.unwrap_or("".to_string());
         format!(
-            "mysql://{}:{}@{}:{}/{}",
+            "postgres://{}:{}@{}:{}/{}",
             user, password, host, port, db_name
         )
     }

@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-这是一个使用 Rust 和 AXUM Web 框架构建的高性能短链接服务。它使用雪花 ID 算法和 base62 编码将长链接转换为短链接，使用 MySQL 进行持久化存储，使用 Redis 进行缓存。
+这是一个使用 Rust 和 AXUM Web 框架构建的高性能短链接服务。它使用雪花 ID 算法和 base62 编码将长链接转换为短链接，使用 PostgreSQL 进行持久化存储，使用 Redis 进行缓存。
 
 ## Rust 版本和框架版本
 
@@ -65,7 +65,7 @@
 - **Base62 编码**: ID 转换为 base62 字符串以生成紧凑的短链接
 - **SHA256 哈希**: 原始链接进行哈希处理以防止重复生成短链接
 - **双层缓存**: Redis 同时缓存 hash->ID 和 ID->URL 映射
-- **连接池管理**: 使用 bb8 管理 Redis 连接，sqlx 管理 MySQL 连接
+- **连接池管理**: 使用 bb8 管理 Redis 连接，sqlx 管理 PostgreSQL 连接
 
 ## 常用开发命令
 
@@ -95,10 +95,10 @@ docker build -t short-link:latest -f ./Dockerfile --no-cache .
 # 使用 Docker 运行
 docker run -d \
   --name short-link \
-  --link mysql \
+  --link postgres \
   --link redis \
   -u root \
-  -e DATABASE_URL=mysql://root:123456@mysql:3306/short_link \
+  -e DATABASE_URL=postgresql://postgres:123456@postgres:5432/short_link \
   -e REDIS_URL=redis://redis:6379 \
   -p 8008:8008 \
   -v "$PWD/application.yaml":/usr/app/application.yaml \
@@ -108,7 +108,7 @@ docker run -d \
 
 ## 数据库设置
 
-### MySQL 模式
+### PostgreSQL 模式
 应用程序需要手动设置数据库。运行 `./sql/ddl.sql` 中的 DDL：
 ```sql
 create table if not exists link_history
@@ -128,7 +128,7 @@ create table if not exists link_history
 ## 配置
 
 ### 环境变量（优先级高于配置文件）
-- `DATABASE_URL`: MySQL 连接字符串（格式：mysql://user:password@host:port/database）
+- `DATABASE_URL`: PostgreSQL 连接字符串（格式：postgresql://user:password@host:port/database）
 - `REDIS_URL`: Redis 连接字符串（格式：redis://[user:password@]host:port）
 
 ### 配置文件
@@ -166,8 +166,9 @@ create table if not exists link_history
 - 使用 tracing 进行全面的日志记录
 
 ### 测试
-- 目前测试覆盖范围有限，主要在 `src/prepare.rs` 和 `src/utils/helper.rs` 中
-- 可使用 `cargo test` 运行测试
+- 本项目不需要创建测试脚本
+- 只做基础类型检查和编译检查
+- 可使用 `cargo check` 进行类型检查，`cargo test` 运行测试
 
 ### 日志记录
 - 使用 tracing 进行结构化日志记录
@@ -192,3 +193,4 @@ create table if not exists link_history
 - SHA256 哈希最小化冲突风险
 - 管理端点无身份验证（生产环境建议添加）
 - 当前配置对所有来源启用 CORS
+

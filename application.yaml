@@ -1,13 +1,13 @@
-# 目前仅支持mysql
+# PostgreSQL数据库配置
 datasource:
   # 数据库地址
   host: localhost
   # 端口号
-  port: 3306
+  port: 15432
   # 用户名
-  user: root
+  user: postgres
   # 密码
-  password: 123456
+  password: Mygvo0oq0818
   # 连接池最大数量
   max_pool_size: 30
   # 最大空闲时间（秒）
@@ -19,8 +19,8 @@ datasource:
 redis:
   host: localhost
   port: 6379
-  user_name: xx      # 用户名 redis6.0以上支持 未配置的情况请删除这行
-  password: 123456   # 密码 未配置的情况请删除这行
+  user_name:
+  password: mygvo0oq
   # 最大连接数
   max_size: 10
   # 使用的db
