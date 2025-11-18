@@ -24,15 +24,21 @@ const SCALE: usize = 62;
 #[allow(dead_code)]
 pub fn encode_base62(data: usize) -> String {
     if data == 0 {
-        return String::from(char::from(BASE62_ALPHABET[data]));
+        return "0".to_string();
     }
+
     let mut num = data;
-    let mut result = String::with_capacity(8);
+    let mut result = Vec::with_capacity(8);
+
+    // 先计算所有字符，再反转
     while num > 0 {
-        result.insert(0, char::from(BASE62_ALPHABET[num % SCALE]));
+        result.push(BASE62_ALPHABET[num % SCALE]);
         num /= SCALE;
     }
-    result
+
+    // 反转并转换为字符串
+    result.reverse();
+    result.into_iter().map(|b| char::from(b)).collect()
 }
 
 /// base62 string convert to usize

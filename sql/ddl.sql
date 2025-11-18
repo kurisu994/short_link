@@ -17,6 +17,19 @@ create table if not exists link_history
 -- 创建索引
 create index if not exists link_history_link_type_index on link_history (link_type);
 
+-- 性能优化索引
+-- 在id字段上创建索引（虽然id是主键，但显式声明可以确保查询计划正确）
+create index if not exists link_history_id_index on link_history (id);
+
+-- 在active字段上创建索引，因为所有查询都过滤active=true
+create index if not exists link_history_active_index on link_history (active);
+
+-- 创建复合索引优化分页查询（按创建时间降序排列的活跃链接）
+create index if not exists link_history_active_create_time_desc_index on link_history (active, create_time DESC);
+
+-- 优化count查询的索引（只针对活跃链接）
+create index if not exists link_history_active_count_index on link_history (active) where active = true;
+
 -- 添加表注释
 comment on table link_history is '链接历史记录表';
 comment on column link_history.origin_url is '原始的地址';

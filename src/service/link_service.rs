@@ -5,6 +5,7 @@ use bb8_redis::{
     redis::{cmd, AsyncCommands},
     RedisConnectionManager,
 };
+use tokio::join;
 
 use crate::idgen::YitIdHelper;
 use crate::link_base_service::{query_by_id, query_by_link_hash, save, query_all_with_pagination, count_total_links};
@@ -15,6 +16,10 @@ use crate::utils::helper::{calculate_sha256, decode_base62, encode_base62};
 
 const LINK_HASH_KEY: &'static str = "link:hash:";
 const LINK_ID_KEY: &'static str = "link:origin:uri:";
+
+// 缓存过期时间配置
+const CACHE_TTL_SECONDS: i64 = 3600; // URL缓存1小时过期
+const HASH_CACHE_TTL_SECONDS: i64 = 86400; // 哈希缓存24小时过期
 
 pub async fn create_link(
     pool: Arc<IState>,
@@ -48,11 +53,12 @@ pub async fn query_origin_url(pool: Arc<IState>, link_hash: String) -> Result<St
         None => Err(AppError::from(anyhow::anyhow!("invalid short link"))),
         Some(history) => {
             let url = history.origin_url.clone();
-            if let Err(err) = r_con
-                .set_nx::<String, String, isize>(link_id_key, url)
-                .await
-            {
-                tracing::error!("cache url failed: {}", err)
+            // 设置缓存，如果键不存在则设置
+            let set_result: bool = r_con.set_nx(&link_id_key, &url).await.unwrap_or(false);
+            if set_result {
+                // 只有设置成功时才设置过期时间
+                let expire_result: () = r_con.expire(&link_id_key, CACHE_TTL_SECONDS).await.unwrap_or(());
+                let _ = expire_result; // 显式处理结果
             }
             Ok(history.origin_url)
         }
@@ -66,23 +72,43 @@ async fn query_and_create<'a>(
 ) -> Result<u64, AppError> {
     let link_hash = calculate_sha256(&origin_link);
     let key = format!("{}{}", LINK_HASH_KEY, link_hash);
-    let data: Option<String> = r_con.get(&key).await?;
-    if let Some(id) = data {
-        let id: u64 = id.parse()?;
+
+    // 并行查询缓存和数据库
+    let (cached_id, db_result) = join!(
+        async {
+            // 查询缓存
+            let data: Option<String> = r_con.get(&key).await.ok();
+            data.and_then(|s| s.parse().ok())
+        },
+        async {
+            // 查询数据库
+            query_by_link_hash(m_conn, &link_hash).await.ok()
+        }
+    );
+
+    // 如果缓存命中，直接返回
+    if let Some(id) = cached_id {
         return Ok(id);
     }
 
-    match query_by_link_hash(m_conn, &link_hash).await? {
+    // 处理数据库查询结果
+    match db_result.flatten() {
         None => {
+            // 数据库中不存在，创建新记录
             let id = YitIdHelper::next_id();
             let db = LinkHistory::from_url(id, &origin_link, link_hash);
             assert!(save(m_conn, db).await?, "生成短链失败");
-            let _ = set_cache(r_con, key, id, origin_link).await;
+            if let Err(err) = set_cache(r_con, key, id, origin_link).await {
+                tracing::error!("设置缓存失败: {}", err);
+            }
             Ok(id as u64)
         }
         Some(history) => {
+            // 数据库中存在，设置缓存并返回
             let id = history.id;
-            let _ = set_cache(r_con, key, id, origin_link).await;
+            if let Err(err) = set_cache(r_con, key, id, origin_link).await {
+                tracing::error!("设置缓存失败: {}", err);
+            }
             Ok(id as u64)
         }
     }
@@ -93,11 +119,17 @@ async fn set_cache<'a>(
     key: String,
     id: i64,
     origin_link: String,
-) {
-    let _ = r_con.set::<String, i64, String>(key, id).await;
-    let _ = r_con
-        .set::<String, String, String>(format!("{}{}", LINK_ID_KEY, id), origin_link)
-        .await;
+) -> Result<(), anyhow::Error> {
+    // 设置哈希缓存
+    let _: () = r_con.set(&key, id).await?;
+    let _: () = r_con.expire(&key, HASH_CACHE_TTL_SECONDS).await?;
+
+    // 设置URL缓存
+    let url_key = format!("{}{}", LINK_ID_KEY, id);
+    let _: () = r_con.set(&url_key, &origin_link).await?;
+    let _: () = r_con.expire(&url_key, CACHE_TTL_SECONDS).await?;
+
+    Ok(())
 }
 
 pub async fn get_link_list(

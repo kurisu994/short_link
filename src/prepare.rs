@@ -55,19 +55,33 @@ pub async fn shutdown_signal() {
 }
 
 async fn create_db_pool(datasource: Datasource) -> PgPool {
-    let mut max_size = datasource.max_pool_size.unwrap_or(2 << 4);
-    let min_size = 2 << 2;
+    // 根据CPU核心数动态调整连接池大小
+    let cpu_count = num_cpus::get();
+    let default_max_size = std::cmp::max(cpu_count * 4, 8); // CPU核心数 * 4，最小8个连接
+    let default_min_size = std::cmp::max(cpu_count, 2); // CPU核心数，最小2个连接
+
+    let mut max_size = datasource.max_pool_size.unwrap_or(default_max_size);
+    let min_size = std::cmp::max(datasource.min_pool_size.unwrap_or(default_min_size) as usize, 2);
+
+    // 确保max_size >= min_size
     if max_size <= min_size {
-        max_size = min_size << 1;
+        max_size = min_size * 2;
     }
-    let idle_timeout = datasource.idle_timeout.unwrap_or(120);
+
+    let idle_timeout = datasource.idle_timeout.unwrap_or(60); // 默认60秒空闲超时
     let db_url = env::var("DATABASE_URL").unwrap_or_else(|_| datasource.to_link());
+
     tracing::info!("db_url: {}", db_url);
+    tracing::info!("数据库连接池配置 - 最大连接数: {}, 最小连接数: {}, 空闲超时: {}秒",
+                   max_size, min_size, idle_timeout);
+
     let db_pool = PgPoolOptions::new()
         .max_connections(max_size as u32)
         .min_connections(min_size as u32)
-        .acquire_timeout(Duration::from_secs(15))
+        .acquire_timeout(Duration::from_secs(5)) // 从15秒减少到5秒，快速失败
         .idle_timeout(Duration::from_secs(idle_timeout as u64))
+        .max_lifetime(Duration::from_secs(1800)) // 添加连接生命周期管理，30分钟
+        .test_before_acquire(true) // 连接前先测试，确保连接有效
         .connect(&db_url)
         .await
         .unwrap();

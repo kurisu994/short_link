@@ -17,6 +17,7 @@ pub struct Datasource {
     pub user: Option<String>,
     pub password: Option<String>,
     pub max_pool_size: Option<usize>,
+    pub min_pool_size: Option<usize>,
     pub idle_timeout: Option<usize>,
     pub db_name: Option<String>,
 }
@@ -48,6 +49,7 @@ impl Default for Datasource {
             user: Some("postgres".to_string()),
             password: None,
             max_pool_size: None,
+            min_pool_size: None,
             idle_timeout: None,
             db_name: None,
         }

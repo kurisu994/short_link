@@ -1,6 +1,7 @@
 use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use axum::http::{Method, Request};
 use axum::Router;
@@ -19,7 +20,6 @@ use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::fmt::time::FormatTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use uuid::Uuid;
 
 use idgen::{IdGeneratorOptions, YitIdHelper};
 
@@ -29,6 +29,13 @@ use crate::{
     service::{link_base_service, link_service},
     types::{IState, RedirectResult},
 };
+
+static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+fn generate_request_id() -> String {
+    let counter = REQUEST_COUNTER.fetch_add(1, Ordering::Relaxed);
+    format!("req_{:x}", counter)
+}
 
 mod config;
 mod handle;
@@ -125,24 +132,45 @@ async fn print_request_response(
     req: Request<Body>,
     next: Next,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let start_time = std::time::Instant::now();
     let (parts, body) = req.into_parts();
-    let uid = Uuid::new_v4()
-        .to_string()
-        .split("-")
-        .last()
-        .unwrap_or("")
-        .to_string();
+    let uid = generate_request_id();
+    let method = parts.method.clone();
+    let uri = parts.uri.clone();
 
-    tracing::info!("request[{}] - {} {} ", uid, parts.method, parts.uri);
+    tracing::info!("request[{}] - {} {}", uid, method, uri);
 
-    let bytes = buffer_and_print(&format!("request[{}]", uid), body).await?;
+    let should_log_body = std::env::var("RUST_LOG")
+        .unwrap_or_default()
+        .contains("debug") ||
+        uri.path().starts_with("/link/");
+
+    let bytes = if should_log_body {
+        buffer_and_print(&format!("request[{}]", uid), body).await?
+    } else {
+        body.collect().await.map_err(|err| {
+            (StatusCode::BAD_REQUEST, format!("failed to read request body: {err}"))
+        })?.to_bytes()
+    };
+
     let req = Request::from_parts(parts, Body::from(bytes));
-
     let res = next.run(req).await;
-    let (parts, body) = res.into_parts();
-    let bytes = buffer_and_print(&format!("response[{}]", uid), body).await?;
-    let res = Response::from_parts(parts, Body::from(bytes));
 
+    let duration = start_time.elapsed();
+    let (response_parts, body) = res.into_parts();
+    let status = response_parts.status;
+
+    tracing::info!("response[{}] - {} - {:?}", uid, status, duration);
+
+    let bytes = if should_log_body {
+        buffer_and_print(&format!("response[{}]", uid), body).await?
+    } else {
+        body.collect().await.map_err(|err| {
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("failed to read response body: {err}"))
+        })?.to_bytes()
+    };
+
+    let res = Response::from_parts(response_parts, Body::from(bytes));
     Ok(res)
 }
 
