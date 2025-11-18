@@ -78,13 +78,13 @@ async fn create_db_pool(datasource: Datasource) -> PgPool {
     let db_pool = PgPoolOptions::new()
         .max_connections(max_size as u32)
         .min_connections(min_size as u32)
-        .acquire_timeout(Duration::from_secs(5)) // 从15秒减少到5秒，快速失败
+        .acquire_timeout(Duration::from_secs(30))
         .idle_timeout(Duration::from_secs(idle_timeout as u64))
-        .max_lifetime(Duration::from_secs(1800)) // 添加连接生命周期管理，30分钟
-        .test_before_acquire(true) // 连接前先测试，确保连接有效
+        .max_lifetime(Duration::from_secs(1800))
+        .test_before_acquire(true)
         .connect(&db_url)
         .await
-        .unwrap();
+        .expect("数据库连接池创建失败，请检查数据库配置和网络连接");
 
     db_pool
 }
@@ -93,12 +93,14 @@ async fn create_redis_pool(redis_cfg: Redis) -> bb8::Pool<RedisConnectionManager
     let max_size = redis_cfg.max_size.unwrap_or(10);
     let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| redis_cfg.to_link());
     tracing::info!("redis_url: {}", redis_url);
-    let redis_manager = RedisConnectionManager::new(redis_url).unwrap();
+    let redis_manager = RedisConnectionManager::new(redis_url)
+        .expect("Redis连接管理器创建失败，请检查Redis URL格式");
     let redis_pool = bb8::Pool::builder()
         .max_size(max_size as u32)
+        .connection_timeout(std::time::Duration::from_secs(30))
         .build(redis_manager)
         .await
-        .unwrap();
+        .expect("Redis连接池创建失败，请检查Redis服务状态和网络连接");
 
     redis_pool
 }
