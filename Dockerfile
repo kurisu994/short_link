@@ -12,6 +12,7 @@ RUN USER=root cargo new --bin short_link
 
 WORKDIR /short_link
 COPY ./Cargo.toml ./Cargo.toml
+COPY ./Cargo.lock ./Cargo.lock
 # Build empty app with downloaded dependencies to produce a stable image layer for next build
 RUN cargo build --release
 
@@ -29,6 +30,8 @@ ARG APP=/usr/app
 RUN apk add --no-cache \
     ca-certificates \
     tzdata \
+    libgcc \
+    libpq \
     && rm -rf /var/cache/apk/*
 
 # 创建非root用户
