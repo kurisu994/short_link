@@ -1,53 +1,31 @@
-FROM rust:1.91-alpine AS builder
+FROM rust:1.91-slim AS builder
+ARG TARGETARCH
+ARG TARGETVARIANT
 
-# 安装构建依赖
-RUN apk add --no-cache \
-    musl-dev \
-    pkgconfig \
-    postgresql-dev \
-    openssl-dev \
-    gcc
-
-RUN USER=root cargo new --bin short_link
-
-WORKDIR /short_link
-COPY ./Cargo.toml ./Cargo.toml
-COPY ./Cargo.lock ./Cargo.lock
-# Build empty app with downloaded dependencies to produce a stable image layer for next build
-RUN cargo build --release
-
-RUN rm src/*.rs
+WORKDIR /usr/local/src
 COPY . .
-RUN rm ./target/release/deps/short_link*
-RUN cargo build --release
+
+RUN apt-get update && apt-get install -y --no-install-recommends musl-tools binutils && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    if [ "$TARGETARCH" = "amd64" ]; then TARGET=x86_64-unknown-linux-musl; \
+    elif [ "$TARGETARCH" = "arm64" ]; then TARGET=aarch64-unknown-linux-musl; \
+    elif [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then TARGET=armv7-unknown-linux-musleabihf; \
+    else echo "unsupported arch: ${TARGETARCH}${TARGETVARIANT}"; exit 1; fi; \
+    rustup target add "$TARGET"; \
+    cargo build --release --target "$TARGET"; \
+    strip "target/$TARGET/release/short_link"; \
+    cp "target/$TARGET/release/short_link" "target/release/short_link"
 
 
 FROM alpine:3.22
-
-ARG APP=/usr/app
-
-# 安装运行时依赖
-RUN apk add --no-cache \
-    ca-certificates \
-    tzdata \
-    libgcc \
-    libpq \
-    && rm -rf /var/cache/apk/*
-
-# 创建非root用户
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-EXPOSE 8008
+ENV TZ=Asia/Shanghai \
+    RUST_LOG=info
+COPY --from=builder /usr/local/src/target/release/short_link  /usr/app/short_link
 
-ENV TZ=Asia/Shanghai
-
-COPY --from=builder /short_link/target/release/short_link ${APP}/short_link
-
-RUN ln -sf /usr/share/zoneinfo/$TZ /etc/localtime \
-    && echo $TZ > /etc/timezone \
-    && chown -R appuser:appgroup ${APP}
-
-WORKDIR ${APP}
+WORKDIR /usr/app
 USER appuser
 
+EXPOSE 8008
 CMD ["./short_link"]
