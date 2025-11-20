@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "mcp_postgre_sql": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "jdbc:postgresql://localhost:15432/short_link"
+      ],
+      "env": {}
+    }
+  }
+}
