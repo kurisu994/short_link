@@ -53,12 +53,10 @@ pub async fn query_origin_url(pool: Arc<IState>, link_hash: String) -> Result<St
         None => Err(AppError::from(anyhow::anyhow!("invalid short link"))),
         Some(history) => {
             let url = history.origin_url.clone();
-            // 设置缓存，如果键不存在则设置
             let set_result: bool = r_con.set_nx(&link_id_key, &url).await.unwrap_or(false);
             if set_result {
-                // 只有设置成功时才设置过期时间
                 let expire_result: () = r_con.expire(&link_id_key, CACHE_TTL_SECONDS).await.unwrap_or(());
-                let _ = expire_result; // 显式处理结果
+                let _ = expire_result;
             }
             Ok(history.origin_url)
         }
@@ -73,28 +71,22 @@ async fn query_and_create<'a>(
     let link_hash = calculate_sha256(&origin_link);
     let key = format!("{}{}", LINK_HASH_KEY, link_hash);
 
-    // 并行查询缓存和数据库
     let (cached_id, db_result) = join!(
         async {
-            // 查询缓存
             let data: Option<String> = r_con.get(&key).await.ok();
             data.and_then(|s| s.parse().ok())
         },
         async {
-            // 查询数据库
             query_by_link_hash(m_conn, &link_hash).await.ok()
         }
     );
 
-    // 如果缓存命中，直接返回
     if let Some(id) = cached_id {
         return Ok(id);
     }
 
-    // 处理数据库查询结果
     match db_result.flatten() {
         None => {
-            // 数据库中不存在，创建新记录
             let id = YitIdHelper::next_id();
             let db = LinkHistory::from_url(id, &origin_link, link_hash);
             assert!(save(m_conn, db).await?, "生成短链失败");
@@ -104,7 +96,6 @@ async fn query_and_create<'a>(
             Ok(id as u64)
         }
         Some(history) => {
-            // 数据库中存在，设置缓存并返回
             let id = history.id;
             if let Err(err) = set_cache(r_con, key, id, origin_link).await {
                 tracing::error!("设置缓存失败: {}", err);
@@ -138,10 +129,8 @@ pub async fn get_link_list(
 ) -> HandlerResult<LinkListResponse> {
     let db_pool = &pool.db_pool;
 
-    // 先查询总数
     let total = count_total_links(db_pool).await?;
 
-    // 如果总数为0，直接返回空结果，避免执行不必要的分页查询
     if total == 0 {
         return Ok(LinkListResponse {
             data: vec![],
@@ -152,11 +141,9 @@ pub async fn get_link_list(
         });
     }
 
-    // 获取分页数据
     let links = query_all_with_pagination(db_pool, &pagination).await?;
     let response_links: Vec<LinkHistoryResponse> = links.into_iter().map(|link| link.to_response()).collect();
 
-    // 计算是否为最后一页
     let total_pages = ((total as f64) / (pagination.page_size as f64)).ceil() as usize;
     let last_page = pagination.page >= total_pages;
 

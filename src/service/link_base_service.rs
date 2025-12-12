@@ -82,3 +82,38 @@ pub async fn count_total_links(m_conn: &sqlx::PgPool) -> Result<i64, crate::AppE
 
     Ok(count.unwrap_or(0))
 }
+
+pub async fn query_expired_links(m_conn: &sqlx::PgPool) -> Result<Vec<LinkHistory>, crate::AppError> {
+    let history_res = sqlx::query_as::<_, LinkHistory>(
+        "SELECT * FROM link_history WHERE active = true AND expire_date IS NOT NULL AND expire_date < NOW()"
+    )
+    .fetch_all(m_conn)
+    .await?;
+
+    Ok(history_res)
+}
+
+pub async fn mark_links_as_inactive(m_conn: &sqlx::PgPool, ids: &[i64]) -> Result<u64, crate::AppError> {
+    if ids.is_empty() {
+        return Ok(0);
+    }
+
+    let mut tx = m_conn.begin().await?;
+    
+    let update_query = "UPDATE link_history SET active = false, update_time = NOW() WHERE id = ANY($1)";
+    let result = sqlx::query(update_query)
+        .bind(ids)
+        .execute(&mut *tx)
+        .await;
+
+    match result {
+        Ok(res) => {
+            tx.commit().await?;
+            Ok(res.rows_affected())
+        }
+        Err(e) => {
+            tx.rollback().await?;
+            Err(e.into())
+        }
+    }
+}

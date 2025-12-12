@@ -26,7 +26,7 @@ use idgen::{IdGeneratorOptions, YitIdHelper};
 use crate::{
     pojo::AppError,
     pojo::Message,
-    service::{link_base_service, link_service},
+    service::{link_base_service, link_service, cleanup_service},
     types::{IState, RedirectResult},
 };
 
@@ -67,7 +67,13 @@ async fn run_server(state: Arc<IState>) -> Result<(), axum::Error> {
             Method::DELETE,
         ]))
         .fallback(prepare::handler_404)
-        .with_state(state);
+        .with_state(state.clone());
+
+    // 启动定时清理过期链接任务
+    let cleanup_state = state.clone();
+    tokio::spawn(async move {
+        cleanup_service::cleanup_expired_links_task(cleanup_state).await;
+    });
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8008));
     tracing::info!(" - Local:   http://{}:{}", "127.0.0.1", 8008);
