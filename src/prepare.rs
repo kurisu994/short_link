@@ -7,13 +7,15 @@ use bb8_redis::RedisConnectionManager;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use tokio::signal;
+use tokio::sync::RwLock;
 
 use crate::config::{Config, Datasource, Driver, Redis};
-use crate::types::IState;
+use crate::types::{IState, CleanupStats};
 
 pub async fn create_state() -> Arc<IState> {
     let cfg = load_config("application.local.yaml", "application.yaml").unwrap_or_default();
     let redis_db = cfg.redis.database;
+    let cleanup_config = cfg.cleanup.unwrap_or_default();
     let db_pool = create_db_pool(cfg.datasource).await;
     let redis_pool = create_redis_pool(cfg.redis).await;
 
@@ -21,6 +23,8 @@ pub async fn create_state() -> Arc<IState> {
         db_pool,
         redis_pool,
         redis_db,
+        cleanup_config,
+        cleanup_stats: Arc::new(RwLock::new(CleanupStats::default())),
     })
 }
 

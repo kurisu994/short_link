@@ -8,6 +8,21 @@ pub trait Driver {
 pub struct Config {
     pub datasource: Datasource,
     pub redis: Redis,
+    pub cleanup: Option<Cleanup>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Cleanup {
+    /// 清理间隔（秒），默认3600秒（1小时）
+    pub interval_secs: Option<u64>,
+    /// 批量处理大小，默认1000
+    pub batch_size: Option<usize>,
+    /// 是否启用分布式锁，默认false
+    pub enable_distributed_lock: Option<bool>,
+    /// 分布式锁超时时间（秒），默认300秒（5分钟）
+    pub lock_timeout_secs: Option<u64>,
+    /// 分布式锁key
+    pub lock_key: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -37,6 +52,19 @@ impl Default for Config {
         Self {
             datasource: Datasource::default(),
             redis: Redis::default(),
+            cleanup: Some(Cleanup::default()),
+        }
+    }
+}
+
+impl Default for Cleanup {
+    fn default() -> Self {
+        Self {
+            interval_secs: Some(3600),
+            batch_size: Some(1000),
+            enable_distributed_lock: Some(false),
+            lock_timeout_secs: Some(300),
+            lock_key: Some("cleanup:lock".to_string()),
         }
     }
 }

@@ -25,3 +25,16 @@ redis:
   max_size: 10
   # 使用的db
   database: 2
+
+# 清理过期链接配置
+cleanup:
+  # 清理间隔（秒），默认3600秒（1小时）
+  interval_secs: 3600
+  # 批量处理大小，默认1000
+  batch_size: 1000
+  # 是否启用分布式锁，多实例部署时建议开启
+  enable_distributed_lock: false
+  # 分布式锁超时时间（秒），默认300秒（5分钟）
+  lock_timeout_secs: 300
+  # 分布式锁key
+  lock_key: "cleanup:lock"

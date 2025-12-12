@@ -69,19 +69,32 @@ async fn run_server(state: Arc<IState>) -> Result<(), axum::Error> {
         .fallback(prepare::handler_404)
         .with_state(state.clone());
 
+    // 创建shutdown channel
+    let (shutdown_tx, shutdown_rx) = tokio::sync::broadcast::channel(1);
+
     // 启动定时清理过期链接任务
     let cleanup_state = state.clone();
     tokio::spawn(async move {
-        cleanup_service::cleanup_expired_links_task(cleanup_state).await;
+        cleanup_service::cleanup_expired_links_task(cleanup_state, shutdown_rx).await;
     });
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8008));
     tracing::info!(" - Local:   http://{}:{}", "127.0.0.1", 8008);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    serve(listener, app)
-        .with_graceful_shutdown(prepare::shutdown_signal())
-        .await
-        .unwrap();
+    
+    // 运行服务器并等待shutdown信号
+    let serve_future = serve(listener, app)
+        .with_graceful_shutdown(prepare::shutdown_signal());
+    
+    serve_future.await.unwrap();
+    
+    // 发送shutdown信号给清理任务
+    let _ = shutdown_tx.send(());
+    
+    // 等待一小段时间让清理任务完成
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    
+    tracing::info!("服务器已优雅关闭");
     Ok(())
 }
 
