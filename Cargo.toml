@@ -29,7 +29,6 @@ tower-http = { version = "^0.6", features = ["cors", "trace"] }
 tracing = "^0.1"
 tracing-appender = "^0.2"
 tracing-subscriber = { version = "^0.3", features = ["env-filter", "time"] }
-uuid = { version = "^1.0", features = ["v4", "fast-rng", "macro-diagnostics"] }
 validator = { version = "^0.18", features = ["derive"] }
 num_cpus = "^1.16"
 
